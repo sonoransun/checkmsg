@@ -5,13 +5,13 @@ parameters in the cited primary source. Values are quoted in MHz (D, E,
 hyperfine A) and dimensionless (g).
 
 Sources:
-  - Loubser & van Wyk 1978, Rep. Prog. Phys. 41, 1201  (P1 / N0 in diamond)
-  - Solntsev & Yelisseyev 2000, Mater. Sci. Forum  (Ni-related HPHT diamond)
-  - Weil 1984, Phys. Chem. Minerals 10, 149  (E1' center in alpha-quartz)
-  - Mackey & Sander 1972, J. Chem. Phys. 56, 5365  (Al-hole center, smoky quartz)
-  - Bernstein 1979, Am. Min. 64, 1056  (Mn2+ in calcite — pearl/biomineral fingerprint)
-  - Manenkov & Prokhorov 1956, JETP 1, 611 (Cr3+ in corundum, the ruby maser system)
-  - Kornienko & Prokhorov 1960, Soviet Phys. JETP 11, 1189 (Fe3+ in corundum)
+  - Loubser & van Wyk 1978, *Rep. Prog. Phys.* 41:1201 (P1 / N0 substitutional nitrogen in diamond)
+  - Solntsev & Yelisseyev 2000, *Mater. Sci. Forum* 354:7 (Ni-related HPHT diamond centres)
+  - Weil 1984, *Phys. Chem. Minerals* 10:149 (E1' centre in α-quartz)
+  - Mackey & Sander 1972, *J. Chem. Phys.* 56:5365 (Al-hole centre in smoky quartz)
+  - Bernstein 1979, *Am. Mineralogist* 64:1056 (Mn²⁺ in calcite — pearl / biomineral fingerprint)
+  - Manenkov & Prokhorov 1956, *Soviet Physics JETP* 1:611 (Cr³⁺ in corundum — the ruby maser system)
+  - Kornienko & Prokhorov 1960, *Soviet Physics JETP* 11:1189 (Fe³⁺ in corundum)
 """
 
 from __future__ import annotations

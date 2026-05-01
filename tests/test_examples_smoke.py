@@ -31,6 +31,7 @@ SCRIPTS = [
     "17_biomineral_disambiguation.py",
     "18_treatment_detection.py",
     "19_unknown_stone_capstone.py",
+    "20_muon_tomography.py",
 ]
 
 

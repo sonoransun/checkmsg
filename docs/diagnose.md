@@ -51,7 +51,50 @@ For example, a Raman spectrum that matches all six catalog peaks of `corundum_Cr
 | EPR | Top center matches with cosine > 0.5 | 0.7 |
 | LA-ICP-MS | Diagnostic isotope set present | 0.5 |
 
-Light elements (H, He, Li, Be, B, C, N, O, F, Ne) are excluded from the XRF major-set check because they sit below the typical XRF detector window. A profile that lists Be as `major` (e.g. aquamarine) still passes the check on its other majors (Al + Si).
+Light elements (H, He, Li, Be, B, C, N, O, F, Ne — the `XRF_INVISIBLE` set in `diagnose.py`) are excluded from the XRF major-set check because they sit below the typical silicon-drift detector window. A profile that lists Be as `major` (e.g. aquamarine) still passes the check on its other majors (Al + Si). Diagnostic credit for those light elements is recovered from LIBS (which detects Be, Li, B optically) or LA-ICP-MS (which counts every isotope above unit mass).
+
+Per-element diagnostic credit deliberately *excludes* the matrix elements `{Al, Si, Ca, Mg, Na, K}`. These appear as majors in so many gemstone profiles (silicates, carbonates, oxides) that a positive detection conveys almost no discriminative information. Trace elements like Cr, Fe, Mn, V, B, Be carry the actual signal — Cr in ruby vs Ti in blue sapphire is the canonical example: both share the corundum host and Al-major XRF, so the verdict turns on the trace.
+
+### Scoring as pseudocode
+
+```python
+score: dict[str, float] = {name: 0.0 for name in CATALOG}
+for ev in evidence:                        # collected from per-technique analyzers
+    for name in ev.favors:
+        score[name] += ev.weight
+    for name in ev.rules_out:
+        score[name] -= ev.weight
+
+ranked   = sorted(score.items(), key=lambda kv: kv[1], reverse=True)
+verdict  = ranked[0][0] if ranked[0][1] > 0 else None
+top, sec = ranked[0][1], ranked[1][1] if len(ranked) > 1 else 0.0
+confidence = top / (top + max(sec, 0)) if top > 0 else 0.0
+confidence = min(1.0, confidence + 0.1 * sum(1 for ev in evidence if verdict in ev.favors))
+```
+
+Every weight in the table above feeds directly into this loop. There are no hidden priors and no learned coefficients — `diagnose()`'s behaviour is fully described by the catalog data plus the scoring weights.
+
+### Worked numerical example: ruby
+
+Synthesizing all four available technique spectra from the `ruby` profile and feeding them to `diagnose()` produces approximately:
+
+| Evidence item | Favours | Weight |
+|---|---|---|
+| Raman: dominant peak at 417 cm⁻¹ (FWHM 7.8) | (informational) | 0 |
+| Raman: matched 6/6 catalog peaks for `ruby` | ruby | 1.00 |
+| Raman: matched 6/6 catalog peaks for `sapphire_blue` | sapphire_blue | 1.00 |
+| Raman: matched 6/7 catalog peaks for `white_sapphire` | white_sapphire | 0.86 |
+| UV-VIS: chromophore Cr³⁺ d-d (ruby/spinel) | ruby, red_spinel | 0.60 |
+| XRF: all major elements of `ruby` present (Al only) | ruby | 0.40 |
+| XRF: all major elements of `sapphire_blue` present | sapphire_blue | 0.40 |
+| XRF: all major elements of `white_sapphire` present | white_sapphire | 0.40 |
+| LIBS: LIBS supports `ruby` chemistry | ruby | 0.30 |
+| LIBS: diagnostic Cr present (non-matrix) | ruby, red_spinel, ... | 0.25 |
+| **Sum for ruby** | | **2.55** |
+| **Sum for sapphire_blue** | | **2.30** |
+| **Sum for white_sapphire** | | **1.26** |
+
+`diagnose()` returns `verdict="ruby"` with confidence ≈ 1.0 (after the +0.1-per-favouring-item bump). The runner-up `sapphire_blue` shares the corundum Raman fingerprint and Al-major XRF; the discriminating evidence is the Cr³⁺ chromophore and the Cr LIBS line, both of which favour ruby and not blue sapphire.
 
 ## Ranking and confidence
 

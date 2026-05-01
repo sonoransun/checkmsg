@@ -1,6 +1,6 @@
 # Check M.S.G.
 
-> A Python toolkit for the **m**atter, **s**tones, **g**ems and other condensed-matter accretions that show up at the gemological lab bench. Six analytical techniques, a 55-entry mineral catalog, and a unified diagnostic pipeline that produces auditable identification reports — with a 19-step curriculum that teaches the workflow from "diamond vs simulants" through to a capstone integrated diagnosis.
+> A Python toolkit for the **m**inerals, **s**tones, **g**ems and other condensed-matter accretions that show up at the gemological lab bench. Six analytical techniques, a 55-entry mineral catalog, and a unified diagnostic pipeline that produces auditable identification reports — with a 19-step curriculum that teaches the workflow from "diamond vs simulants" through to a capstone integrated diagnosis.
 
 ![Capstone analysis](examples/output/19_unknown_stone_capstone.png)
 *An unknown green stone, identified as tsavorite via the unified `diagnose()` pipeline using four techniques (Raman + UV-VIS + XRF + LIBS).*
@@ -53,7 +53,7 @@ flowchart TB
 ```bash
 git clone <this-repo> && cd checkmsg
 python -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest -q                                                  # 222 tests, ~62 s
+.venv/bin/pytest -q                                                  # 226 tests, ~62 s
 .venv/bin/python examples/19_unknown_stone_capstone.py               # full diagnose, prints reasoning trace
 ```
 
@@ -83,12 +83,13 @@ print(report.render())
 | **UV-VIS** | [`uvvis.py`](src/checkmsg/uvvis.py) | Colour origin via electronic transitions | Bundled chromophore table |
 | **EPR** | [`epr.py`](src/checkmsg/epr.py) | Unpaired electrons via spin-Hamiltonian simulation | 9 literature-cited centers |
 | **LA-ICP-MS** | [`laicpms.py`](src/checkmsg/laicpms.py) | Concentrations + isotope ratios + U-Pb age | NIST SRM 612/610, IUPAC, chondrite REE |
+| **Muon imaging (experimental)** | [`muon/`](src/checkmsg/muon/) | 3-D internal density + Z² scattering + element ID for *large composite* subjects | 18 materials (Tsai 1974), muonic K_α tabulation (Engfer et al. 1974) |
 
 Each technique has a dedicated docs page at [`docs/techniques.md`](docs/techniques.md) with schematic, sequence diagram, and worked example.
 
 ## Curriculum showcase
 
-Nineteen runnable example scripts under `examples/` — single-technique discriminations through a capstone integrated diagnosis. Pick a row to dive in.
+Twenty runnable example scripts under `examples/` — single-technique discriminations through a capstone integrated diagnosis, plus an experimental muon-tomography mode for large composite subjects. Pick a tile to dive in.
 
 | ![](examples/output/01_diamond_vs_moissanite_vs_cz.png) | ![](examples/output/04_sapphire_origin.png) | ![](examples/output/05_multi_laser_temperature.png) |
 |---|---|---|
@@ -97,6 +98,8 @@ Nineteen runnable example scripts under `examples/` — single-technique discrim
 | **06** EPR unpaired-electron centres | **07** LA-ICP-MS for ambiguous cases | **08** Diamond simulant carousel |
 | ![](examples/output/09_blue_stone_disambiguation.png) | ![](examples/output/13_red_gems_carousel.png) | ![](examples/output/19_unknown_stone_capstone.png) |
 | **09** Blue stones disambiguated | **13** Red gems beyond ruby | **19** Capstone integrated diagnosis |
+| ![](examples/output/20_muon_tomography.png) |  |  |
+| **20** Muon tomography (experimental) |  |  |
 
 Full per-example walkthroughs in [`docs/curriculum.md`](docs/curriculum.md).
 
@@ -115,12 +118,13 @@ The catalog and reference tables are sourced from primary gemological and atomic
 - **RRUFF Project** — Raman reference spectra (https://rruff.info), CC-licensed.
 - **NIST Atomic Spectra Database** — XRF K/L line energies + LIBS atomic emission lines.
 - **IUPAC 2021** — natural-abundance isotope tables.
-- **Pearce et al. 1997** *Geostandards Newsletter* 21:115 — NIST SRM 612 / 610 preferred values.
-- **McDonough & Sun 1995** *Chem. Geol.* 120:223 — CI chondrite REE.
-- **Stacey & Kramers 1975** *EPSL* 26:207 — terrestrial Pb composition.
-- **Steiger & Jäger 1977** — U-Pb decay constants.
-- **Loubser & van Wyk 1978** — diamond P1 EPR parameters.
-- **Manenkov & Prokhorov 1956** — Cr³⁺ in corundum (the ruby maser system).
+- **Pearce, Perkins, Westgate, Gorton, Jackson, Neal & Chenery 1997**, *Geostandards Newsletter* 21:115 — NIST SRM 612 / 610 preferred values.
+- **McDonough & Sun 1995**, *Chem. Geol.* 120:223 — CI chondrite REE.
+- **Stacey & Kramers 1975**, *Earth Planet. Sci. Lett.* 26:207 — terrestrial Pb composition.
+- **Steiger & Jäger 1977**, *Earth Planet. Sci. Lett.* 36:359 — U-Pb decay constants.
+- **Longerich, Jackson & Günther 1996**, *J. Anal. At. Spectrom.* 11:899 — LA-ICP-MS internal-standard quantitation equation.
+- **Loubser & van Wyk 1978**, *Rep. Prog. Phys.* 41:1201 — diamond P1 EPR parameters.
+- **Manenkov & Prokhorov 1956**, *Soviet Physics JETP* 1:611 — Cr³⁺ in corundum (the ruby maser system).
 
 Citations for every individual catalog entry live in `src/checkmsg/minerals.py` docstrings.
 
@@ -129,5 +133,3 @@ Citations for every individual catalog entry live in `src/checkmsg/minerals.py` 
 The example scripts and tests use **synthetic spectra** generated for didactic purposes. Real instrument data — with drift, polyatomic interferences, matrix-induced sensitivity changes, and physical inclusions — will degrade `diagnose()` accuracy. This toolkit is **not certified** for commercial gemological identification.
 
 ---
-
-*"Check M.S.G." — original README terminology preserved out of affection.*

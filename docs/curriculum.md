@@ -210,7 +210,7 @@ run_carousel("diamond simulant carousel", specimens)
 
 **Scenario.** Six chemically unrelated gems share a colour: sapphire (corundum), tanzanite (zoisite), iolite (cordierite), aquamarine (beryl), blue topaz, blue zircon. The combined Raman + UV-VIS pipeline resolves all six.
 
-**Key technique** — Raman fingerprint identifies the host species; UV-VIS chromophores confirm *why* the gem is blue.
+**Key technique** — Raman fingerprint identifies the host species; UV-VIS chromophores identify the electronic transition responsible for the blue colour (each gem absorbs a different wavelength range, and the transmitted complementary colour appears blue).
 
 | Gem | Chromophore (cause of colour) |
 |---|---|
@@ -349,7 +349,7 @@ This is a deliberately hard case for the diagnostic pipeline — Raman alone can
 
 **Scenario.** Three chrysoberyl varieties exhibit different optical phenomena despite sharing the host mineral:
 
-- **Alexandrite** — Cr³⁺-coloured chrysoberyl. Famous "alexandrite effect": green in daylight (5500 K), red under tungsten light (2700 K). Cr³⁺ d-d bands transmit different colours under different illuminants.
+- **Alexandrite** — Cr³⁺-coloured chrysoberyl. The "alexandrite effect": green in daylight (5500 K), red under tungsten light (2700 K). The Cr³⁺ absorption profile has minima near 480 nm (blue-green) and 700 nm (red); under daylight the blue-green transmission window dominates because the illuminant is rich in short wavelengths, while under tungsten light the red window dominates because the illuminant peaks in the red — the same gem appears different colours under different spectral power distributions.
 - **Cymophane** — chrysoberyl with rutile silk inclusions creating cat's-eye chatoyancy. Ti from rutile is the diagnostic XRF marker.
 - **Chrysoberyl yellow** — pure Fe-coloured chrysoberyl, no Cr.
 
@@ -425,6 +425,37 @@ The capstone diagnosis identifies tsavorite via:
 The verdict is **tsavorite** with confidence ~1.0. Read the full reasoning trace by running `python examples/19_unknown_stone_capstone.py` and looking at the `Reasoning trace:` section it prints.
 
 **Follow-on**: What single piece of evidence would *change* the verdict from tsavorite to demantoid (Cr³⁺-grossular)? (Hint: LIBS Cr instead of V trace.)
+
+---
+
+## 20 — Muon tomography (experimental)
+
+![](../examples/output/20_muon_tomography.png)
+
+**Scenario.** Three large composite subjects, each beyond the reach of the cm-scale techniques in `01..19`:
+
+1. **Sealed reliquary** — a 10 cm cube of polymer filler housing a Pt-wire armature, ruby clusters, and a hollow void. The contents must be characterised without breaking the seal.
+2. **Composite gem geode** — a 5 cm corundum specimen with a Pt-wire inclusion and a diamond cluster. Only Z-contrast distinguishes the inclusions from the host.
+3. **Meteorite cross-section** — a 10 cm pallasite analogue with Fe-Ni metal phases in olivine matrix, plus a small Au inclusion (1-voxel scale).
+
+**Key technique.** Muon imaging — three modes orchestrated by `checkmsg.muon.analyze`:
+
+- **Transmission tomography** for density mapping (reliquary, meteorite).
+- **Multiple Coulomb scattering tomography** for Z²-weighted hot-spot localisation (geode).
+- **Muonic-K_α spectroscopy** of the stopping-muon flux for non-destructive elemental ID (the Au inclusion in scenario 3).
+
+```python
+from checkmsg.muon import VoxelGrid, MuonSource, analyze
+g = VoxelGrid.filled((16, 16, 16), "corundum", spacing_mm=(2.0,) * 3)
+g.set_box((6, 6, 6), (10, 10, 10), "platinum")
+src = MuonSource(mean_momentum_MeV=200, flux_per_s=1e9, polarity="negative")
+img = analyze(g, src, scattering=True, n_projections=18, pixels_per_side=16, muons_per_ray=8)
+# img.scattering_density_map highlights the Pt inclusion
+```
+
+**Expected output**: each scenario prints its diagnostic (correlation vs ground truth, hot-spot ratio, detected K_α elements). The full-mode run produces a 3×3 figure: rows are the three subjects, columns are (ground truth slice, transmission reconstruction, scattering reconstruction).
+
+**Follow-on**: A real cosmic-ray muography measurement of an Egyptian pyramid takes months because the cosmic-ray muon flux is ~1 µ cm⁻² min⁻¹. Our simulator assumes 10⁹ µ/s. What hardware development would close the gap? (Hint: spallation-target sources at MW-class proton accelerators, surface-muon production in compact π/µ-decay cells, or proton-driven muon production via π⁻ → µ⁻ chains. None of these is benchtop-ready.)
 
 ---
 

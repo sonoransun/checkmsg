@@ -41,7 +41,7 @@ flowchart TB
     Diagnose --> Report
 ```
 
-Every spectrum lands in `Spectrum`, an immutable dataclass that records the axis, intensity, technique tag, units, and free-form metadata. The technique-specific analyzers consume a `Spectrum` and emit either a structured result (e.g. `RamanResult`, `XrfResult`) or a list of detected features (peaks, chromophores, isotope ratios). The diagnostic pipeline turns those analyzer outputs into typed `Evidence` items, scores them against every entry in the mineral catalog, and emits a `DiagnosticReport` with a verdict, confidence, full candidate-score table, reasoning trace, and follow-up recommendations.
+Every spectrum lands in `Spectrum`, an immutable dataclass that records the axis, intensity, technique tag, units, and free-form metadata. The technique-specific analyzers consume a `Spectrum` and emit either a structured result (e.g. `RamanResult`, `XrfResult`) or a list of detected features (peaks, chromophores, isotope ratios). The diagnostic pipeline turns those analyzer outputs into typed `Evidence` items, scores every `MineralProfile` in `CATALOG` by summing additive weights from each piece of evidence (rules in `docs/diagnose.md`), and emits a `DiagnosticReport` with the top-ranked verdict, confidence, full candidate-score table, reasoning trace, and follow-up recommendations.
 
 ## Class diagram
 
@@ -172,3 +172,34 @@ A typical analysis runs like this:
 7. `DiagnosticReport.render()` produces a multi-paragraph human-readable explanation.
 
 For a worked end-to-end walk-through, see [`curriculum.md`](curriculum.md), specifically example 19 (the capstone).
+
+## Catalog round-trip: `diagnose_profile`
+
+The catalog-driven curriculum scripts (08..19) all use the same closed-loop pattern: take a `MineralProfile`, synthesise every available technique's spectrum from its bundled signatures, and feed the resulting list back through `diagnose()`. The helper `diagnose.diagnose_profile(profile)` packages this round trip:
+
+```mermaid
+sequenceDiagram
+    participant Caller as curriculum script
+    participant DP as diagnose_profile
+    participant SYN as minerals.synthesize_*
+    participant D as diagnose.diagnose
+    participant CAT as CATALOG
+    Caller->>DP: profile (MineralProfile)
+    DP->>SYN: synthesize_raman(profile)
+    SYN-->>DP: Spectrum (raman)
+    DP->>SYN: synthesize_uvvis(profile)
+    SYN-->>DP: Spectrum (uvvis)
+    DP->>SYN: synthesize_xrf(profile)
+    SYN-->>DP: Spectrum (xrf)
+    DP->>SYN: synthesize_libs(profile)
+    SYN-->>DP: Spectrum (libs)
+    DP->>SYN: synthesize_epr(profile)
+    SYN-->>DP: Spectrum (epr) or None
+    DP->>D: list[Spectrum]
+    D->>CAT: score every profile
+    CAT-->>D: catalog data
+    D-->>DP: DiagnosticReport
+    DP-->>Caller: DiagnosticReport
+```
+
+`diagnose_profile` skips synthesis for any technique where the profile leaves the relevant signature empty (e.g. minerals with no `epr_centers` produce no EPR spectrum). The same `Spectrum` objects fed to `diagnose()` would be produced by a real instrument running on the same sample — the round trip is the bridge between the catalog (a literature-derived ground truth) and the pipeline (an evidence-driven inference).

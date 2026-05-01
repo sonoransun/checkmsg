@@ -189,6 +189,36 @@ def draw_laicpms(ax):
             fontsize=10, color=NAVY, weight="bold", ha="center", va="center")
 
 
+def draw_muon(ax):
+    _setup_ax(ax, "Muon imaging — 3-D tomography of large composite subjects")
+    _box(ax, 0.1, 2.3, 1.7, 1.0, "θ-source\n(theoretical\n10⁹ µ/s)", fill=GREEN)
+    _box(ax, 2.0, 2.3, 1.0, 1.0, "collimator", fill=NAVY)
+    _box(ax, 3.2, 2.3, 1.4, 1.0, "entry tracker\n(drift chambers)", fill=NAVY)
+    _box(ax, 4.9, 1.8, 2.0, 2.0, "subject\n(decimeter\ncomposite)", fill=GREY)
+    _box(ax, 7.2, 2.3, 1.4, 1.0, "exit tracker\n(drift chambers)", fill=NAVY)
+    _box(ax, 8.8, 2.3, 1.0, 1.0, "DAQ", fill=NAVY)
+    _arrow(ax, 1.8, 2.8, 2.0, 2.8, color=GREEN)
+    _arrow(ax, 3.0, 2.8, 3.2, 2.8, color=GREEN, label="µ⁻")
+    _arrow(ax, 4.6, 2.8, 4.9, 2.8, color=GREEN)
+    _arrow(ax, 6.9, 2.8, 7.2, 2.8, color=ORANGE, label="scattered µ⁻")
+    _arrow(ax, 8.6, 2.8, 8.8, 2.8, color=NAVY)
+    # Inset: scattering angle measurement geometry
+    ax.plot([3.6, 5.5], [4.6, 4.6], color=GREY, lw=1.2, linestyle="--")
+    ax.plot([5.5, 7.0], [4.6, 4.95], color=ORANGE, lw=1.4)
+    ax.plot([5.5, 7.0], [4.6, 4.6], color=GREY, lw=1.0, linestyle=":")
+    ax.text(3.5, 4.65, "incoming", fontsize=8, ha="right", va="center", color=GREY)
+    ax.text(7.05, 5.0, "θ_scatter", fontsize=9, color=ORANGE)
+    # Inset: voxel grid
+    for i in range(4):
+        for j in range(4):
+            colour = GREY if (i, j) != (2, 2) else ORANGE
+            ax.add_patch(patches.Rectangle((1.0 + 0.2 * i, 4.5 + 0.2 * j), 0.18, 0.18,
+                                            edgecolor=NAVY, facecolor=colour, alpha=0.5))
+    ax.text(0.95, 5.5, "voxel grid", fontsize=8, color=NAVY)
+    ax.text(5.0, 0.7, "→ density (transmission), Z² (scattering), and muonic K_α (stopping)",
+            fontsize=10, color=NAVY, weight="bold", ha="center", va="center")
+
+
 SCHEMATIC_BUILDERS = {
     "raman": draw_raman,
     "xrf": draw_xrf,
@@ -196,6 +226,7 @@ SCHEMATIC_BUILDERS = {
     "uvvis": draw_uvvis,
     "epr": draw_epr,
     "laicpms": draw_laicpms,
+    "muon": draw_muon,
 }
 
 

@@ -11,10 +11,12 @@ Contents:
 
 Sources:
   - IUPAC 2021 (Atomic Weights of the Elements) for natural abundances
-  - Pearce et al. 1997, Geostandards Newsletter 21, 115-144 (NIST SRM 612 / 610)
-  - McDonough & Sun 1995, Chem. Geol. 120, 223-253 (CI chondrite)
-  - Stacey & Kramers 1975, EPSL 26, 207-221 (terrestrial Pb model)
-  - Steiger & Jäger 1977, EPSL 36, 359-362 (U-Pb decay constants)
+  - Pearce, Perkins, Westgate, Gorton, Jackson, Neal & Chenery 1997,
+    *Geostandards Newsletter* 21:115-144 (NIST SRM 612 / 610 preferred values)
+  - McDonough & Sun 1995, *Chem. Geol.* 120:223-253 (CI chondrite REE)
+  - Stacey & Kramers 1975, *Earth Planet. Sci. Lett.* 26:207-221 (terrestrial Pb model)
+  - Steiger & Jäger 1977, *Earth Planet. Sci. Lett.* 36:359-362 (U-Pb decay constants)
+  - Longerich, Jackson & Günther 1996, *J. Anal. At. Spectrom.* 11:899 (LA-ICP-MS quantitation)
 """
 
 from __future__ import annotations

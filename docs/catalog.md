@@ -219,4 +219,42 @@ epr_spec   = synthesize_epr(profile, frequency_GHz=9.5)
 
 This is the path used by `diagnose.diagnose_profile(profile)` and by every catalog-driven curriculum example in `examples/08..19`.
 
+## Adding a mineral
+
+To add a new entry to `CATALOG`, populate as much of the schema as the literature supports. Required fields: `name`, `species`, `chemical_formula`, plus at least one of (`raman_peaks_cm`, `uvvis_bands_nm`, `xrf_signature`, `libs_signature`, `epr_centers`) so the diagnose pipeline has at least one diagnostic signal to score against. Recommended: `mohs_hardness`, `density_g_cc`, `refractive_index`, `common_colors`, `confusables`, `diagnostic_features`, and at least one citation in `references`.
+
+A minimal new entry looks like:
+
+```python
+"new_mineral": MineralProfile(
+    name="new_mineral",
+    species="<group name>",
+    aliases=("commercial name", "historical name"),
+    chemical_formula="ChemicalFormula",
+    crystal_system="<crystal system>",
+    mohs_hardness=(low, high),
+    density_g_cc=(low, high),
+    refractive_index=(low, high),
+    common_colors=("colour1", "colour2"),
+    raman_peaks_cm=_p((peak1_cm, rel_intensity), (peak2_cm, rel_intensity), ...),
+    uvvis_bands_nm=(band1_nm, band2_nm),
+    chromophores=("<key from refdata.chromophores>",),
+    xrf_signature={"Element1": "major", "Element2": "trace"},
+    libs_signature={"Element1": "major", "Element3": "trace"},
+    epr_centers=("<key from refdata.epr_centers.CENTERS>",),
+    icpms_diagnostic_isotopes=("Pb208", "Sr88"),
+    confusables=("similar_mineral_1", "similar_mineral_2"),
+    diagnostic_features=("characteristic 1", "characteristic 2"),
+    references=("Author Year, *Journal* Vol:Page",),
+),
+```
+
+After adding the entry, the test suite enforces three invariants automatically:
+
+1. `tests/test_minerals_catalog.py::test_every_profile_has_at_least_one_diagnostic_signal` — at least one of the spectroscopic-signature fields must be non-empty.
+2. `tests/test_minerals_catalog.py::test_every_profile_has_at_least_one_diagnostic_feature_string` — `diagnostic_features` must be non-empty.
+3. `tests/test_minerals_catalog.py::test_every_confusable_resolves` — every name listed in `confusables` must itself exist in `CATALOG` (catch typos).
+
+If the new mineral introduces a chromophore key that isn't in `refdata/chromophores.CHROMOPHORES`, add the chromophore there first with its band positions and tolerance. Same pattern for new EPR centres.
+
 For technique-by-technique deep dives see [`techniques.md`](techniques.md). For the diagnostic pipeline that consumes these synthesised spectra, see [`diagnose.md`](diagnose.md).

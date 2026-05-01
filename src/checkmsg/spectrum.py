@@ -5,7 +5,7 @@ from typing import Literal
 
 import numpy as np
 
-Technique = Literal["raman", "xrf", "libs", "uvvis", "epr", "laicpms"]
+Technique = Literal["raman", "xrf", "libs", "uvvis", "epr", "laicpms", "muon-xray"]
 
 
 @dataclass
