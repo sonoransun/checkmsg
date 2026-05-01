@@ -1,0 +1,55 @@
+# NIST Atomic Spectra Database subset — strong neutral/ion emission lines (nm).
+# Curated for the elements relevant to gemological LIBS in the example scripts.
+# Source: NIST ASD v5.10 (https://physics.nist.gov/asd).
+# columns: element,wavelength_nm,relative_intensity,species
+element,wavelength_nm,relative_intensity,species
+Al,394.401,1.00,Al I
+Al,396.152,1.00,Al I
+Be,234.861,1.00,Be I
+Be,313.042,0.80,Be II
+Be,313.107,0.50,Be II
+Cr,425.435,1.00,Cr I
+Cr,427.480,0.95,Cr I
+Cr,428.972,0.90,Cr I
+Cr,520.604,0.40,Cr I
+Cu,324.754,1.00,Cu I
+Cu,327.396,0.90,Cu I
+Fe,371.994,1.00,Fe I
+Fe,373.713,0.90,Fe I
+Fe,374.556,0.80,Fe I
+Fe,381.584,0.70,Fe I
+Fe,438.354,0.60,Fe I
+Ga,287.424,1.00,Ga I
+Ga,294.364,0.90,Ga I
+Ga,403.298,0.50,Ga I
+Ga,417.204,0.40,Ga I
+Mg,279.553,1.00,Mg II
+Mg,280.270,0.95,Mg II
+Mg,285.213,0.90,Mg I
+Mg,517.268,0.30,Mg I
+Mg,518.360,0.30,Mg I
+Mo,379.825,1.00,Mo I
+Mo,386.411,0.90,Mo I
+Mo,390.296,0.70,Mo I
+Ni,341.476,1.00,Ni I
+Ni,352.454,0.90,Ni I
+Pt,265.945,1.00,Pt I
+Pt,306.471,0.80,Pt I
+Si,251.611,1.00,Si I
+Si,288.158,0.80,Si I
+Ti,334.941,1.00,Ti II
+Ti,336.121,0.90,Ti II
+Ti,365.350,0.50,Ti I
+Ti,498.173,0.30,Ti I
+Ti,499.107,0.25,Ti I
+V,310.230,1.00,V II
+V,318.398,0.90,V II
+V,437.924,0.50,V I
+V,438.472,0.45,V I
+O,777.194,1.00,O I
+O,777.417,0.95,O I
+O,777.539,0.90,O I
+H,656.279,1.00,H I
+N,742.364,1.00,N I
+N,744.229,0.90,N I
+N,746.831,0.85,N I

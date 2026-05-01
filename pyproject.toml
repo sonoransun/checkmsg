@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "checkmsg"
+version = "0.1.0"
+description = "Evaluate minerals, stones, and gems via Raman, XRF, laser ablation and UV-VIS spectroscopy."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Check M.S.G. contributors" }]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.0",
+    "matplotlib>=3.7",
+    "requests>=2.30",
+    "lmfit>=1.2",
+    "platformdirs>=3.10",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "pytest-mock>=3.12", "ruff>=0.4"]
+
+[project.scripts]
+checkmsg = "checkmsg.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+checkmsg = ["refdata/data/*.csv", "refdata/data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
