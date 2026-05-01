@@ -49,7 +49,7 @@ result.best.cosine                # 0..1
 
 **Worked example output** — `examples/01_diamond_vs_moissanite_vs_cz.py`:
 
-![Diamond / Moissanite / CZ Raman](../examples/output/01_diamond_vs_moissanite_vs_cz.png)
+![Diamond / Moissanite / CZ Raman](figures/examples/01_diamond_vs_moissanite_vs_cz.png)
 
 Three colourless brilliants, three distinct Raman fingerprints. Diamond's razor-sharp 1332 cm⁻¹ F2g line, moissanite's 767/789 cm⁻¹ folded LO/TO doublet, and cubic zirconia's broad envelope at 269/471/641 cm⁻¹ separate the samples without ambiguity.
 
@@ -118,7 +118,7 @@ sequenceDiagram
 
 **Key API**:
 
-![LIBS-driven sapphire origin](../examples/output/04_sapphire_origin.png)
+![LIBS-driven sapphire origin](figures/examples/04_sapphire_origin.png)
 
 Same gem family (corundum), four geographic origins → distinct trace-element fingerprints. Mahalanobis distance to bundled centroids classifies each sapphire.
 
@@ -156,7 +156,7 @@ res = assign_bands(spec)
 
 **Worked output** — `examples/03_emerald_vs_green_glass.py`:
 
-![Emerald vs green glass](../examples/output/03_emerald_vs_green_glass.png)
+![Emerald vs green glass](figures/examples/03_emerald_vs_green_glass.png)
 
 Real emerald shows the Cr³⁺ d-d doublet (~430 + 605 nm in beryl host). Green glass shows a broad amorphous absorption with no chromophore signature.
 
@@ -199,7 +199,7 @@ result.g_factors                    # [2.0024, 2.0026, 2.0028]
 
 **Worked output** — `examples/06_epr_unpaired_electrons.py`:
 
-![EPR unpaired electrons](../examples/output/06_epr_unpaired_electrons.png)
+![EPR unpaired electrons](figures/examples/06_epr_unpaired_electrons.png)
 
 The P1 nitrogen triplet, smoky-quartz E1' singlet, and Mn²⁺ pearl sextet are all resolved by the same spin-Hamiltonian simulator — only the spin system parameters differ.
 
@@ -247,7 +247,7 @@ result.u_pb_age_Ma                    # 100.0
 
 **Worked output** — `examples/07_laicpms_complex_cases.py`:
 
-![LA-ICP-MS complex cases](../examples/output/07_laicpms_complex_cases.png)
+![LA-ICP-MS complex cases](figures/examples/07_laicpms_complex_cases.png)
 
 Pearl natural-vs-cultured discrimination (Mn quant + Pb isotope), HPHT-treated diamond detection (Fe+Co+Ni catalyst signature), surface-coating depth profile, and Cretaceous zircon U-Pb dating — all in one example.
 
@@ -320,6 +320,6 @@ Muonic atom K_α emission uses the hydrogenic Bohr-radius scaling: replacing the
 
 **Worked output** — `examples/20_muon_tomography.py`:
 
-![Muon tomography](../examples/output/20_muon_tomography.png)
+![Muon tomography](figures/examples/20_muon_tomography.png)
 
 Three composite subjects: a sealed reliquary (transmission), a gem geode with Pt inclusion (scattering), and a meteorite cross-section with Au inclusion (transmission + scattering + muonic K_α).

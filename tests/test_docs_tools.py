@@ -82,3 +82,34 @@ def test_build_confusables_graph_mermaid_flag():
     out = proc.stdout
     assert out.startswith("```mermaid\n")
     assert out.rstrip().endswith("```")
+
+
+# --- Image-reference presence check ---------------------------------------------
+
+DOC_FILES = [REPO_ROOT / "README.md", *sorted((REPO_ROOT / "docs").glob("*.md"))]
+IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+\.png)\)")
+
+
+def test_every_doc_image_reference_resolves():
+    """Every `![...](path.png)` in the README and docs/ must resolve to a file on disk.
+
+    Catches the failure mode where a doc references a gitignored or deleted PNG —
+    the case that motivated moving example plots into `docs/figures/examples/`.
+    """
+    missing: list[tuple[str, str]] = []
+    for doc in DOC_FILES:
+        if not doc.exists():
+            continue
+        text = doc.read_text(encoding="utf-8")
+        for match in IMAGE_RE.finditer(text):
+            ref = match.group(1).strip()
+            # Skip absolute URLs and anchor-only fragments.
+            if ref.startswith(("http://", "https://", "data:")):
+                continue
+            target = (doc.parent / ref).resolve()
+            if not target.exists():
+                missing.append((str(doc.relative_to(REPO_ROOT)), ref))
+    assert not missing, (
+        "broken image references in documentation:\n"
+        + "\n".join(f"  {d}: {r}" for d, r in missing)
+    )

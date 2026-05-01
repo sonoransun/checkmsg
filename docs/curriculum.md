@@ -24,7 +24,7 @@ python examples/NN_<theme>.py --smoke    # CI-style: no plot, asserts only
 
 ## 01 — Diamond vs moissanite vs cubic zirconia
 
-![](../examples/output/01_diamond_vs_moissanite_vs_cz.png)
+![](figures/examples/01_diamond_vs_moissanite_vs_cz.png)
 
 **Scenario.** A buyer presents three colourless brilliants claimed to be diamond. One is genuine, one is moissanite (6H-SiC), and one is cubic zirconia. A confocal Raman microscope at 532 nm separates them in seconds.
 
@@ -48,7 +48,7 @@ result.best.mineral, result.best.cosine
 
 ## 02 — Natural vs synthetic ruby
 
-![](../examples/output/02_natural_vs_synthetic_ruby.png)
+![](figures/examples/02_natural_vs_synthetic_ruby.png)
 
 **Scenario.** Three rubies share the corundum Raman fingerprint exactly. Origin and growth method must come from *trace elements*: natural Mogok ruby has Fe/Ti/V/Ga; flame-fusion (Verneuil) shows almost only Cr; flux-grown shows Pt/Mo flux residues.
 
@@ -68,7 +68,7 @@ The classification rule: Pt and/or Mo present → flux-grown; ultra-clean (only 
 
 ## 03 — Emerald vs green glass
 
-![](../examples/output/03_emerald_vs_green_glass.png)
+![](figures/examples/03_emerald_vs_green_glass.png)
 
 **Scenario.** A parcel of green stones — some real Cr³⁺-coloured beryl emerald, some glass paste. Both can look identical to the naked eye. Two complementary signatures resolve them:
 
@@ -89,7 +89,7 @@ has_cr3 = any("Cr3+" in c.name for c in chromophores)
 
 ## 04 — Sapphire geographic origin
 
-![](../examples/output/04_sapphire_origin.png)
+![](figures/examples/04_sapphire_origin.png)
 
 **Scenario.** All blue sapphires share the corundum Raman fingerprint. Origin determines value — Kashmir > Burma >> Madagascar/Montana. LIBS trace-element ratios produce locality-specific patterns.
 
@@ -113,7 +113,7 @@ predicted = min(distances, key=distances.get)
 
 ## 05 — Multi-laser, multi-temperature Raman
 
-![](../examples/output/05_multi_laser_temperature.png)
+![](figures/examples/05_multi_laser_temperature.png)
 
 **Scenario.** The same ruby specimen, measured on a Raman microscope equipped with eight laser lines (275 / 325 / 405 / 457 / 488 / 514 / 633 / 830 nm) and a liquid-nitrogen cryostage. Sixteen spectra in total. Five effects emerge that none of them shows in isolation:
 
@@ -137,7 +137,7 @@ T_recovered = raman.infer_temperature(spec, mode_cm=417.0)
 
 ## 06 — EPR identification of unpaired electrons
 
-![](../examples/output/06_epr_unpaired_electrons.png)
+![](figures/examples/06_epr_unpaired_electrons.png)
 
 **Scenario.** Five EPR mini-scenarios on synthetic CW first-derivative spectra produced by a real spin-Hamiltonian simulator:
 
@@ -161,7 +161,7 @@ result.g_factors           # [2.0024, 2.0026, 2.0028]
 
 ## 07 — LA-ICP-MS for ambiguous and complex cases
 
-![](../examples/output/07_laicpms_complex_cases.png)
+![](figures/examples/07_laicpms_complex_cases.png)
 
 **Scenario.** Four scenarios where Raman / XRF / UV-VIS / EPR alone leave room for ambiguity, solved by a single LA-ICP-MS measurement:
 
@@ -186,7 +186,7 @@ laicpms.eu_anomaly(result.ree_pattern)  # 0.07 (strong negative)
 
 ## 08 — Diamond simulant carousel
 
-![](../examples/output/08_diamond_simulant_carousel.png)
+![](figures/examples/08_diamond_simulant_carousel.png)
 
 **Scenario.** A jeweller offers eight colourless brilliants claimed to be diamond. Only one is. The unified `diagnose()` pipeline returns the canonical mineral name with reasoning trace for every specimen. Specimens: diamond, moissanite, cubic zirconia, GGG, YAG, white sapphire, white topaz, white spinel, glass paste.
 
@@ -206,7 +206,7 @@ run_carousel("diamond simulant carousel", specimens)
 
 ## 09 — Blue-stone disambiguation
 
-![](../examples/output/09_blue_stone_disambiguation.png)
+![](figures/examples/09_blue_stone_disambiguation.png)
 
 **Scenario.** Six chemically unrelated gems share a colour: sapphire (corundum), tanzanite (zoisite), iolite (cordierite), aquamarine (beryl), blue topaz, blue zircon. The combined Raman + UV-VIS pipeline resolves all six.
 
@@ -227,7 +227,7 @@ run_carousel("diamond simulant carousel", specimens)
 
 ## 10 — Garnet species suite
 
-![](../examples/output/10_garnet_species_suite.png)
+![](figures/examples/10_garnet_species_suite.png)
 
 **Scenario.** Five garnet end-members share the cubic crystal structure and the SiO₄ tetrahedron, so their Raman patterns are closely similar. The chemical end-members differ in the dominant cation:
 
@@ -247,7 +247,7 @@ run_carousel("diamond simulant carousel", specimens)
 
 ## 11 — Jade family confusion
 
-![](../examples/output/11_jade_family_confusion.png)
+![](figures/examples/11_jade_family_confusion.png)
 
 **Scenario.** Four very different minerals all sold as "jade":
 
@@ -265,7 +265,7 @@ Hardness alone (jadeite 6.5–7 vs serpentine 2.5–5.5) is enough to separate s
 
 ## 12 — Tourmaline species
 
-![](../examples/output/12_tourmaline_species.png)
+![](figures/examples/12_tourmaline_species.png)
 
 **Scenario.** The tourmaline group shares a (BO₃)₃Si₆O₁₈ framework but differs in the X-site and Y-site occupants. Four species:
 
@@ -282,7 +282,7 @@ Hardness alone (jadeite 6.5–7 vs serpentine 2.5–5.5) is enough to separate s
 
 ## 13 — Red gems carousel
 
-![](../examples/output/13_red_gems_carousel.png)
+![](figures/examples/13_red_gems_carousel.png)
 
 **Scenario.** Red colour comes from many distinct chromophores. Without lab analysis a buyer could mistake any of these for ruby:
 
@@ -304,7 +304,7 @@ The pipeline picks the host mineral via Raman, then confirms the chromophore spe
 
 ## 14 — Black opaque stones
 
-![](../examples/output/14_black_opaque_stones.png)
+![](figures/examples/14_black_opaque_stones.png)
 
 **Scenario.** Six black gems span four chemical systems:
 
@@ -325,7 +325,7 @@ Density spans 1.3 → 5.3 — a four-fold range. Raman crisply separates organic
 
 ## 15 — Quartz treatment history
 
-![](../examples/output/15_quartz_treatment_history.png)
+![](figures/examples/15_quartz_treatment_history.png)
 
 **Scenario.** Five quartz varieties all share Raman: 128 + 207 + 463 cm⁻¹. They differ in their colour-centre population, which encodes the geological / treatment history:
 
@@ -345,7 +345,7 @@ This is a deliberately hard case for the diagnostic pipeline — Raman alone can
 
 ## 16 — Chrysoberyl trio
 
-![](../examples/output/16_chrysoberyl_trio.png)
+![](figures/examples/16_chrysoberyl_trio.png)
 
 **Scenario.** Three chrysoberyl varieties exhibit different optical phenomena despite sharing the host mineral:
 
@@ -361,7 +361,7 @@ All share Raman 354 / 411 / 463 / 798 / 935 cm⁻¹.
 
 ## 17 — Biomineral disambiguation
 
-![](../examples/output/17_biomineral_disambiguation.png)
+![](figures/examples/17_biomineral_disambiguation.png)
 
 **Scenario.** Five biogenic gem materials with overlapping appearance:
 
@@ -381,7 +381,7 @@ Raman is the first cut: ivory's 962 cm⁻¹ phosphate ν₁ mode is unmistakable
 
 ## 18 — Treatment-detection workflow
 
-![](../examples/output/18_treatment_detection.png)
+![](figures/examples/18_treatment_detection.png)
 
 **Scenario.** Five treated stones present cosmetically as their natural counterparts but carry diagnostic signatures of enhancement:
 
@@ -401,7 +401,7 @@ The pipeline handles the *host* identification reliably. Treatment-specific diag
 
 ## 19 — Capstone: diagnose an unknown stone
 
-![](../examples/output/19_unknown_stone_capstone.png)
+![](figures/examples/19_unknown_stone_capstone.png)
 
 **Scenario.** A jeweller hands the lab a translucent green cabochon. It could be tsavorite (V-grossular), demantoid, peridot, jadeite, or emerald. The lab measures four techniques (Raman + UV-VIS + XRF + LIBS) and feeds everything to `diagnose()`. The reasoning trace makes every decision auditable:
 
@@ -430,7 +430,7 @@ The verdict is **tsavorite** with confidence ~1.0. Read the full reasoning trace
 
 ## 20 — Muon tomography (experimental)
 
-![](../examples/output/20_muon_tomography.png)
+![](figures/examples/20_muon_tomography.png)
 
 **Scenario.** Three large composite subjects, each beyond the reach of the cm-scale techniques in `01..19`:
 

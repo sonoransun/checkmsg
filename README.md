@@ -2,7 +2,7 @@
 
 > A Python toolkit for the **m**inerals, **s**tones, **g**ems and other condensed-matter accretions that show up at the gemological lab bench. Six analytical techniques, a 55-entry mineral catalog, and a unified diagnostic pipeline that produces auditable identification reports — with a 19-step curriculum that teaches the workflow from "diamond vs simulants" through to a capstone integrated diagnosis.
 
-![Capstone analysis](examples/output/19_unknown_stone_capstone.png)
+![Capstone analysis](docs/figures/examples/19_unknown_stone_capstone.png)
 *An unknown green stone, identified as tsavorite via the unified `diagnose()` pipeline using four techniques (Raman + UV-VIS + XRF + LIBS).*
 
 ---
@@ -91,14 +91,14 @@ Each technique has a dedicated docs page at [`docs/techniques.md`](docs/techniqu
 
 Twenty runnable example scripts under `examples/` — single-technique discriminations through a capstone integrated diagnosis, plus an experimental muon-tomography mode for large composite subjects. Pick a tile to dive in.
 
-| ![](examples/output/01_diamond_vs_moissanite_vs_cz.png) | ![](examples/output/04_sapphire_origin.png) | ![](examples/output/05_multi_laser_temperature.png) |
+| ![](docs/figures/examples/01_diamond_vs_moissanite_vs_cz.png) | ![](docs/figures/examples/04_sapphire_origin.png) | ![](docs/figures/examples/05_multi_laser_temperature.png) |
 |---|---|---|
 | **01** Diamond vs moissanite vs CZ | **04** Sapphire geographic origin | **05** Eight lasers × two temperatures |
-| ![](examples/output/06_epr_unpaired_electrons.png) | ![](examples/output/07_laicpms_complex_cases.png) | ![](examples/output/08_diamond_simulant_carousel.png) |
+| ![](docs/figures/examples/06_epr_unpaired_electrons.png) | ![](docs/figures/examples/07_laicpms_complex_cases.png) | ![](docs/figures/examples/08_diamond_simulant_carousel.png) |
 | **06** EPR unpaired-electron centres | **07** LA-ICP-MS for ambiguous cases | **08** Diamond simulant carousel |
-| ![](examples/output/09_blue_stone_disambiguation.png) | ![](examples/output/13_red_gems_carousel.png) | ![](examples/output/19_unknown_stone_capstone.png) |
+| ![](docs/figures/examples/09_blue_stone_disambiguation.png) | ![](docs/figures/examples/13_red_gems_carousel.png) | ![](docs/figures/examples/19_unknown_stone_capstone.png) |
 | **09** Blue stones disambiguated | **13** Red gems beyond ruby | **19** Capstone integrated diagnosis |
-| ![](examples/output/20_muon_tomography.png) |  |  |
+| ![](docs/figures/examples/20_muon_tomography.png) |  |  |
 | **20** Muon tomography (experimental) |  |  |
 
 Full per-example walkthroughs in [`docs/curriculum.md`](docs/curriculum.md).
