@@ -1,18 +1,19 @@
 # Architecture
 
-`checkmsg` is a Python toolkit for gemological analysis from spectroscopic data. The architecture is intentionally flat: a single `Spectrum` data primitive, six per-technique analyzer modules, a shared mineral catalog, and a unified diagnostic pipeline that orchestrates them.
+`checkmsg` is a Python toolkit for gemological analysis from spectroscopic data. The architecture is intentionally flat: a single `Spectrum` data primitive, seven per-technique analyzer modules, a shared mineral catalog, and a unified diagnostic pipeline that orchestrates them.
 
 ## System overview
 
 ```mermaid
 flowchart TB
-    subgraph Input["Input — six technique-specific spectra"]
+    subgraph Input["Input — seven technique-specific spectra"]
         S1["raman cm⁻¹"]
         S2["xrf keV"]
         S3["libs nm"]
         S4["uvvis nm"]
         S5["epr mT"]
         S6["laicpms m/z"]
+        S7["squid-mh mT / squid-chi K|Hz"]
     end
     subgraph Analyzers["Per-technique analyzers"]
         A1["raman.analyze"]
@@ -21,6 +22,7 @@ flowchart TB
         A4["uvvis.assign_bands"]
         A5["epr.analyze"]
         A6["laicpms.analyze"]
+        A7["squid.analyze (dc/rf)"]
     end
     Catalog[("MineralProfile<br/>CATALOG (55 entries)")]
     Diagnose["diagnose.diagnose"]
@@ -31,12 +33,14 @@ flowchart TB
     S4 --> A4
     S5 --> A5
     S6 --> A6
+    S7 --> A7
     A1 --> Diagnose
     A2 --> Diagnose
     A3 --> Diagnose
     A4 --> Diagnose
     A5 --> Diagnose
     A6 --> Diagnose
+    A7 --> Diagnose
     Catalog --> Diagnose
     Diagnose --> Report
 ```
@@ -65,7 +69,22 @@ classDiagram
         +dict xrf_signature
         +dict libs_signature
         +tuple epr_centers
+        +str squid_ordering
+        +float squid_curie_K
+        +float squid_neel_K
+        +float squid_saturation_emu_g
+        +tuple squid_susceptibility_si
+        +float squid_coercivity_mT
         +tuple confusables
+    }
+    class SquidMeasurement {
+        +str mode
+        +ndarray axis
+        +ndarray signal
+        +float temperature_K
+        +float applied_field_mT
+        +float frequency_Hz
+        +chi_complex()
     }
     class IcpmsRun {
         +dict transients
@@ -107,6 +126,7 @@ classDiagram
         +render() str
     }
     Spectrum <.. IcpmsRun : produces (to_spectrum)
+    Spectrum <.. SquidMeasurement : produces (to_spectrum)
     DiagnosticReport <.. Spectrum : input
     DiagnosticReport <.. MineralProfile : scored against
 ```
@@ -127,6 +147,7 @@ checkmsg/
 │   ├── uvvis.py               # UV-VIS: chromophore band assignment
 │   ├── epr.py                 # EPR spin-Hamiltonian simulator + analysis
 │   ├── laicpms.py             # LA-ICP-MS quant + isotopes + U-Pb + REE
+│   ├── squid.py               # SQUID magnetometry: dc-mh hysteresis, rf χ(T) + AC χ_ac
 │   ├── identify.py            # combined_report multi-technique fusion
 │   ├── diagnose.py            # unified diagnostic pipeline + reasoning trace
 │   ├── minerals.py            # MineralProfile catalog (55 entries) + helpers
@@ -140,8 +161,9 @@ checkmsg/
 │       ├── icpms_data.py      # NIST SRM 612/610, IUPAC isotopes, chondrite REE
 │       ├── nist_xray.py       # K/L line table (X-ray)
 │       ├── nist_asd.py        # atomic emission lines (LIBS)
+│       ├── squid_signatures.py # MagneticMineral library (13 canonical signatures)
 │       └── rruff.py           # RRUFF Raman fetcher with on-disk cache
-├── examples/                  # 19 curriculum scripts (01..19)
+├── examples/                  # 21 curriculum scripts (01..21)
 ├── docs/                      # this directory
 ├── tools/                     # build_schematics.py, build_confusables_graph.py
 └── tests/                     # 200+ tests covering all modules
@@ -157,7 +179,7 @@ checkmsg/
 | "How does the diagnose pipeline score candidates?" | `src/checkmsg/diagnose.py` |
 | "Where are reference spectra cached?" | `~/.cache/checkmsg/rruff/` (overridable via `CHECKMSG_CACHE`) |
 | "How do I make a synthetic spectrum?" | `src/checkmsg/synthetic.py` |
-| "Where are the worked examples?" | `examples/` (curriculum 01..19); `docs/curriculum.md` for narrated walkthroughs |
+| "Where are the worked examples?" | `examples/` (curriculum 01..21); `docs/curriculum.md` for narrated walkthroughs |
 
 ## Data-flow narrative
 
@@ -195,6 +217,8 @@ sequenceDiagram
     SYN-->>DP: Spectrum (libs)
     DP->>SYN: synthesize_epr(profile)
     SYN-->>DP: Spectrum (epr) or None
+    DP->>SYN: synthesize_squid_mh(profile)
+    SYN-->>DP: SquidMeasurement → Spectrum or None
     DP->>D: list[Spectrum]
     D->>CAT: score every profile
     CAT-->>D: catalog data
@@ -202,4 +226,4 @@ sequenceDiagram
     DP-->>Caller: DiagnosticReport
 ```
 
-`diagnose_profile` skips synthesis for any technique where the profile leaves the relevant signature empty (e.g. minerals with no `epr_centers` produce no EPR spectrum). The same `Spectrum` objects fed to `diagnose()` would be produced by a real instrument running on the same sample — the round trip is the bridge between the catalog (a literature-derived ground truth) and the pipeline (an evidence-driven inference).
+`diagnose_profile` skips synthesis for any technique where the profile leaves the relevant signature empty (e.g. minerals with no `epr_centers` produce no EPR spectrum, minerals with empty `squid_ordering` produce no SQUID measurement). The same `Spectrum` objects fed to `diagnose()` would be produced by a real instrument running on the same sample — the round trip is the bridge between the catalog (a literature-derived ground truth) and the pipeline (an evidence-driven inference).

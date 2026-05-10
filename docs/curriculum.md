@@ -1,4 +1,4 @@
-# Curriculum — 19 worked examples
+# Curriculum — 21 worked examples
 
 Every example script under `examples/` is a self-contained gemmological scenario. They build from "diamond vs simulants" through "garnet species" to a full multi-technique capstone diagnosis. Each section below shows the expected plot, the diagnostic narrative, the key code excerpt, and a follow-on question for the learner.
 
@@ -11,6 +11,7 @@ flowchart LR
     C --> D["Catalog carousels<br/>08–14"]
     D --> E["Subtle cases<br/>15–18"]
     E --> F["Capstone<br/>19"]
+    F --> G["Experimental<br/>20 muon, 21 SQUID"]
 ```
 
 Run any example offline:
@@ -456,6 +457,42 @@ img = analyze(g, src, scattering=True, n_projections=18, pixels_per_side=16, muo
 **Expected output**: each scenario prints its diagnostic (correlation vs ground truth, hot-spot ratio, detected K_α elements). The full-mode run produces a 3×3 figure: rows are the three subjects, columns are (ground truth slice, transmission reconstruction, scattering reconstruction).
 
 **Follow-on**: A real cosmic-ray muography measurement of an Egyptian pyramid takes months because the cosmic-ray muon flux is ~1 µ cm⁻² min⁻¹. Our simulator assumes 10⁹ µ/s. What hardware development would close the gap? (Hint: spallation-target sources at MW-class proton accelerators, surface-muon production in compact π/µ-decay cells, or proton-driven muon production via π⁻ → µ⁻ chains. None of these is benchtop-ready.)
+
+---
+
+## 21 — SQUID magnetometry on canonical magnetic minerals
+
+![](figures/examples/21_squid_magnetic_minerals.png)
+
+**Scenario.** Five mini-experiments that exercise both acquisition modes of a `checkmsg.squid` magnetometer. The script is a tour of the diagnoses that *only* a flux-quantum-sensitive instrument can resolve:
+
+1. **dc-SQUID hysteresis carousel** — magnetite (Fe₃O₄, ferrimagnet, Tc=858 K, Ms=92 emu/g, Hc≈20 mT) vs hematite (α-Fe₂O₃, canted-AFM with weak parasitic ferromagnetism, Ms≈0.4 emu/g, Hc≈300 mT) vs ilmenite (FeTiO₃, paramagnetic at room T because TN=55 K is well below 295 K) vs diamond (purely diamagnetic). The 200× ratio in saturation moment between magnetite and hematite is invisible to Raman.
+2. **rf-SQUID χ(T) thermal sweep** on magnetite from 50 K to 1000 K. The pipeline locates Tc as the steepest negative dχ/dT and fits a Curie-Weiss law above the cusp, recovering Tc=858 K within 5 %.
+3. **AC χ_ac on a superparamagnetic FeCoNi cluster** — proxy for the metallic catalyst residue that HPHT-grown diamond traps and natural diamond does not. The Casimir-du Pré loss peak in χ″(ω) locates 1/τ; with Arrhenius τ(T) = τ₀·exp(blocking_K/T), the peak position infers a blocking temperature.
+4. **Pearl freshwater-vs-saltwater AC screening** — Mn²⁺ concentration differs by ~30× (≈25 ppm vs ≈750 ppm), and Mn²⁺ is paramagnetic. Reading χ′ at 1 Hz, 295 K shows a ≈22× contrast — non-destructive in seconds, replacing the LA-ICP-MS Mn assay for this discrimination.
+5. **diagnose() integration** — feed synthesised magnetite Raman + dc-SQUID M(H) into the unified pipeline. The DiagnosticReport now lists SQUID evidence rows ("magnetic ordering: ferrimagnetic", "saturation moment 92.0 emu/g matches magnetite") alongside the Raman peak match, with confidence 1.0.
+
+**Key technique.** SQUID magnetometry — flux-quantum-sensitive measurements of bulk magnetic moment and AC susceptibility:
+
+```python
+from checkmsg import minerals, squid
+
+profile = minerals.get("magnetite")
+mh   = minerals.synthesize_squid_mh(profile)
+ct   = minerals.synthesize_squid_chi_T(profile)
+ac   = minerals.synthesize_squid_chi_ac(profile)
+
+print(squid.extract_coercivity(mh))           # ~20 mT
+print(squid.extract_saturation(mh))           # ~92 emu/g
+print(squid.extract_curie_temperature(ct))    # ~858 K
+
+result = squid.analyze(mh)                    # ranks MagneticMineral candidates
+print(result.best.name)                       # 'magnetite'
+```
+
+**Expected output**: a four-panel figure (M-H loops, χ(T), AC χ′ + χ″, pearl AC contrast) plus the `diagnose()` reasoning trace.
+
+**Follow-on**: For a 1 ct (~200 mg) sample with 8 ppm Fe-Co-Ni HPHT catalyst residue, what dc-SQUID flux noise floor (in Φ₀/√Hz) lets you detect the resulting moment in a 1 s integration? (Hint: 8 ppm × 200 mg × ~180 emu/g ≈ 3 × 10⁻⁷ emu; pickup-loop area ≈ 1 cm² gives ΔΦ ≈ μ₀ΔM/A ≈ 4 × 10⁻¹³ Wb ≈ 200 mΦ₀. A commercial 1 µΦ₀/√Hz SQUID achieves SNR ≫ 10⁵ in 1 s — the bottleneck is sample-coupling geometry, not the sensor.)
 
 ---
 

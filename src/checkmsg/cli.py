@@ -8,6 +8,7 @@ from checkmsg import diagnose as diagnose_mod
 from checkmsg import epr as epr_mod
 from checkmsg import io as io_mod
 from checkmsg import laicpms as laicpms_mod
+from checkmsg import squid as squid_mod
 from checkmsg.identify import combined_report
 from checkmsg.libs import identify as libs_identify
 from checkmsg.raman import analyze as raman_analyze
@@ -15,7 +16,10 @@ from checkmsg.spectrum import Technique
 from checkmsg.uvvis import assign_bands as uvvis_assign
 from checkmsg.xrf import identify_elements as xrf_identify
 
-UNITS = {"raman": "cm-1", "xrf": "keV", "libs": "nm", "uvvis": "nm", "epr": "mT", "laicpms": "m/z"}
+UNITS = {
+    "raman": "cm-1", "xrf": "keV", "libs": "nm", "uvvis": "nm",
+    "epr": "mT", "laicpms": "m/z", "squid-mh": "mT", "squid-chi": "K",
+}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,7 +27,10 @@ def main(argv: list[str] | None = None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     pa = sub.add_parser("analyze", help="Run a single technique on one spectrum file.")
-    pa.add_argument("technique", choices=["raman", "xrf", "libs", "uvvis", "epr", "laicpms"])
+    pa.add_argument(
+        "technique",
+        choices=["raman", "xrf", "libs", "uvvis", "epr", "laicpms", "squid-mh", "squid-chi"],
+    )
     pa.add_argument("path", type=Path)
     pa.add_argument("--frequency", type=float, default=None,
                     help="Microwave frequency in GHz (required for technique=epr).")
@@ -31,6 +38,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="Calibration spectrum file (LA-ICP-MS only; NIST glass).")
     pa.add_argument("--internal-standard", type=str, default=None,
                     help="Internal standard for LA-ICP-MS, e.g. 'Al:529000' (element:ppm).")
+    pa.add_argument("--temperature", type=float, default=295.0,
+                    help="Sample temperature (K) for SQUID M(H) measurements.")
 
     pi = sub.add_parser("identify", help="Run multi-technique fusion on several files.")
     pi.add_argument("files", nargs="+", type=str,
@@ -71,6 +80,16 @@ def main(argv: list[str] | None = None) -> int:
             print(f"EPR g-factors: {[round(g, 4) for g in r.g_factors]}")
             for c in r.candidates:
                 print(f"  {c.name:<32} cos={c.cosine:.3f} g_score={c.g_score:.3f}")
+        elif args.technique in ("squid-mh", "squid-chi"):
+            spec.metadata.setdefault("squid_mode",
+                                     "dc-mh" if args.technique == "squid-mh" else "rf-chi-T")
+            spec.metadata.setdefault("temperature_K", float(args.temperature))
+            meas = squid_mod.from_spectrum(spec)
+            r = squid_mod.analyze(meas)
+            print(f"SQUID extracted: {r.headline()}")
+            for c in r.candidates:
+                print(f"  {c.name:<28} combined={c.combined:.2f} "
+                      f"ord_match={c.ordering_match} Tc_resid={c.tc_residual_K:.0f} K")
         elif args.technique == "laicpms":
             sample_run = laicpms_mod.run_from_spectrum(spec)
             cal_run = None
@@ -104,6 +123,14 @@ def main(argv: list[str] | None = None) -> int:
             extra: dict = {}
             if tech == "epr" and len(parts) >= 3:
                 extra["frequency_GHz"] = float(parts[2])
+            if tech == "squid-mh":
+                extra["squid_mode"] = "dc-mh"
+                if len(parts) >= 3:
+                    extra["temperature_K"] = float(parts[2])
+            elif tech == "squid-chi":
+                extra["squid_mode"] = "rf-chi-T"
+                if len(parts) >= 3:
+                    extra["applied_field_mT"] = float(parts[2])
             tech_t: Technique = tech  # type: ignore[assignment]
             s = io_mod.read_csv(fname, technique=tech_t, units=UNITS[tech])
             s.metadata.update(extra)
@@ -127,6 +154,14 @@ def main(argv: list[str] | None = None) -> int:
                     print("error: EPR entry needs frequency: 'epr:<path>:<freq_GHz>'", file=sys.stderr)
                     return 2
                 extra["frequency_GHz"] = float(parts[2])
+            if tech == "squid-mh":
+                extra["squid_mode"] = "dc-mh"
+                if len(parts) >= 3:
+                    extra["temperature_K"] = float(parts[2])
+            elif tech == "squid-chi":
+                extra["squid_mode"] = "rf-chi-T"
+                if len(parts) >= 3:
+                    extra["applied_field_mT"] = float(parts[2])
             tech_t: Technique = tech  # type: ignore[assignment]
             s = io_mod.read_csv(fname, technique=tech_t, units=UNITS[tech])
             s.metadata.update(extra)

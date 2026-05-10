@@ -50,6 +50,9 @@ For example, a Raman spectrum that matches all six catalog peaks of `corundum_Cr
 | LIBS | Each detected non-matrix element | 0.25 |
 | EPR | Top center matches with cosine > 0.5 | 0.7 |
 | LA-ICP-MS | Diagnostic isotope set present | 0.5 |
+| SQUID | Magnetic ordering type matches | 0.7 (favours every entry whose `squid_ordering` matches; rules out every entry with a different non-empty ordering) |
+| SQUID | Curie / Néel temperature within 5 % of catalog value | 0.5 |
+| SQUID | Saturation moment within 20 % of catalog value | 0.4 |
 
 Light elements (H, He, Li, Be, B, C, N, O, F, Ne — the `XRF_INVISIBLE` set in `diagnose.py`) are excluded from the XRF major-set check because they sit below the typical silicon-drift detector window. A profile that lists Be as `major` (e.g. aquamarine) still passes the check on its other majors (Al + Si). Diagnostic credit for those light elements is recovered from LIBS (which detects Be, Li, B optically) or LA-ICP-MS (which counts every isotope above unit mass).
 
@@ -131,7 +134,8 @@ Final verdict: **tsavorite** with confidence ~1.0. The reasoning trace shows eve
 
 The pipeline is honest about its weaknesses:
 
-- **Quartz colour-treatment family** — rock crystal, citrine (natural and heat-treated), amethyst, and smoky quartz all share Raman, and several share EPR centres (E1', Al-hole). The pipeline frequently confuses them. The educational point is that *quartz colour-centre history is a genuinely hard case*; a single technique can't fully resolve it. Real labs use complementary FTIR + photoluminescence.
+- **Quartz colour-treatment family** — rock crystal, citrine (natural and heat-treated), amethyst, and smoky quartz all share Raman, and several share EPR centres (E1', Al-hole). The pipeline frequently confuses them. The educational point is that *quartz colour-centre history is a genuinely hard case*; a single technique can't fully resolve it. Real labs use complementary FTIR + photoluminescence. SQUID adds little to this set since the Fe³⁺/Fe⁴⁺ moments are too small to discriminate at room T — see the comments in the entries themselves.
+- **Pearl variety triplet** — pearl_natural_saltwater / pearl_akoya / pearl_freshwater all show paramagnetic Mn²⁺ ordering, so SQUID alone cannot resolve them; AC χ′ at 1 Hz separates *freshwater* (high Mn²⁺) from the saltwater pair, but distinguishing natural-saltwater from akoya still needs LA-ICP-MS Pb isotope ratios.
 - **Synthetic data fidelity** — the catalog drives the synthesis, so a `diagnose_profile(profile)` round-trip is by construction biased toward the right answer. Real instrument data with drift, polyatomic interferences, and matrix-induced sensitivity changes will degrade scores.
 - **Tied verdicts under noise** — when two minerals share most diagnostics (e.g. ruby vs sapphire_blue both being corundum + chromophore), the tie-breaker is the trace-element evidence. Rules out are *not* hard exclusions; they apply weights only.
 

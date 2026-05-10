@@ -1,6 +1,6 @@
-# Six analytical techniques
+# Seven analytical techniques
 
-Every technique answers a different question about a sample. This page summarises the physics, the bundled reference data, and the analyzer entry points for each of the six techniques `checkmsg` supports.
+Every technique answers a different question about a sample. This page summarises the physics, the bundled reference data, and the analyzer entry points for each of the seven techniques `checkmsg` supports.
 
 | Technique | Question answered | Module | Units |
 |---|---|---|---|
@@ -10,6 +10,7 @@ Every technique answers a different question about a sample. This page summarise
 | UV-VIS | What gives the sample its colour? | `uvvis.py` | nm |
 | EPR | Are there unpaired electrons? Where? | `epr.py` | mT |
 | LA-ICP-MS | What concentrations and isotope ratios? | `laicpms.py` | m/z |
+| SQUID | What is the bulk magnetic ordering and moment? | `squid.py` | mT (M-H) / K (χ-T) / Hz (χ-ac) |
 
 The analyzers share a common shape: each accepts a `Spectrum`, calls technique-appropriate preprocessing, detects features, matches against bundled reference data, and returns a structured result.
 
@@ -323,3 +324,77 @@ Muonic atom K_α emission uses the hydrogenic Bohr-radius scaling: replacing the
 ![Muon tomography](figures/examples/20_muon_tomography.png)
 
 Three composite subjects: a sealed reliquary (transmission), a gem geode with Pt inclusion (scattering), and a meteorite cross-section with Au inclusion (transmission + scattering + muonic K_α).
+
+---
+
+## SQUID magnetometry
+
+![SQUID magnetometry schematic](figures/squid_schematic.png)
+
+A SQUID — Superconducting Quantum Interference Device — measures magnetic flux at the **single-flux-quantum** sensitivity (Φ₀ = h / 2e ≈ 2.07 × 10⁻¹⁵ Wb), translating directly into bulk magnetic-moment sensitivity better than 10⁻⁹ emu. For mineral identification, this opens questions that no other bundled technique answers: bulk magnetic ordering type (ferri / ferro / canted-AFM / AFM / paramagnetic / diamagnetic), Curie / Néel temperatures, saturation moment, coercivity, and AC-susceptibility relaxation times. Two complementary acquisition modes are bundled, matching real instrument families:
+
+* **dc-SQUID** — two-junction interferometer, quasi-static field sweep.
+  *Voltage across the ring oscillates with applied flux at period Φ₀; flux-locked feedback turns this into a linear M readout.* Best moment sensitivity; produces M(H) hysteresis loops.
+* **rf-SQUID** — single-junction tank-circuit, AC modulation.
+  *The Josephson junction is read by a resonant LC tank; lock-in detection at the drive frequency yields χ′ + iχ″.* Better suited to χ(T) thermal sweeps and AC susceptibility χ′(ω) + iχ″(ω) frequency scans.
+
+The "focused external magnetic contrast" the technique requires comes from **applied bias field sweeps**: a Helmholtz pair drives the sample to saturation in dc-mh, while an additional small AC modulation drives the lock-in for χ_ac. Sweeping H past the coercivity reveals the four classic hysteresis-loop diagnostics — saturation moment Ms, remanence Mr, coercivity Hc, and the slope dM/dH at high field — each of which discriminates a different family of magnetic minerals.
+
+```mermaid
+sequenceDiagram
+    participant Sample as sample + bias coil
+    participant Pickup as superconducting<br/>pickup loop
+    participant SQUID as SQUID ring<br/>(dc 2-junction or rf 1-junction)
+    participant FLL as flux-locked feedback<br/>or rf lock-in
+    participant Analyze as squid.analyze
+    Sample->>Pickup: H_bias + M(sample)
+    Pickup->>SQUID: Φ ∝ M
+    SQUID->>FLL: voltage / lock-in I+Q
+    FLL-->>Analyze: M(H), χ(T), or χ_ac(ω)
+    Analyze-->>Analyze: extract Hc, Ms, Tc, Weiss θ, loss-peak ω
+    Analyze-->>Analyze: rank MagneticMineral candidates
+```
+
+**Bundled data**: 13 canonical `MagneticMineral` records in `refdata/squid_signatures.py` covering the magnetically-relevant subset of mineralogy: ferrimagnets (magnetite, pyrrhotite_4c), canted antiferromagnets (hematite — with Morin transition), pure antiferromagnets (goethite, ilmenite), the metallic FeNiCo HPHT-diamond catalyst, paramagnetic transition-metal cores (Cr³⁺, Mn²⁺, Fe²⁺, Fe³⁺), and three diamagnetic baselines (diamond, quartz, calcite). The `MineralProfile` records in `minerals.py` carry a parallel set of fields (`squid_ordering`, `squid_curie_K`, `squid_neel_K`, `squid_saturation_emu_g`, `squid_susceptibility_si`, `squid_coercivity_mT`, `squid_morin_K`) populated for every magnetically relevant entry. Sources: Dunlop & Özdemir 1997, *Rock Magnetism* (CUP); Hunt-Moskowitz-Banerjee 1995, AGU Reference Shelf 3; Morin 1950, *Phys. Rev.* 78:819.
+
+**Key API**:
+
+```python
+from checkmsg import minerals, squid
+
+profile = minerals.get("magnetite")
+mh   = minerals.synthesize_squid_mh(profile)        # dc-SQUID hysteresis at 295 K
+chi  = minerals.synthesize_squid_chi_T(profile)     # rf-SQUID χ(T) sweep
+ac   = minerals.synthesize_squid_chi_ac(profile)    # rf-SQUID AC susceptibility
+
+squid.extract_coercivity(mh)        # mT
+squid.extract_saturation(mh)        # emu/g
+squid.extract_curie_temperature(chi)  # K — locates the dχ/dT minimum
+squid.fit_curie_weiss(chi)          # (C, θ_K)
+squid.extract_loss_peak(ac)         # Hz (ωτ = 1)
+
+result = squid.analyze(mh)          # ranks MagneticMineral candidates
+result.best.name                    # 'magnetite'
+```
+
+**Physics fundamentals**
+
+The Josephson constant K_J = 2e/h ≈ 4.836 × 10¹⁴ Hz/V quantises flux through any superconducting loop; SQUIDs exploit the resulting periodic V(Φ) curve to count flux quanta. A pickup loop wound around the sample translates ΔM into ΔΦ ≈ μ₀ ΔM A_loop, so a flux change of one quantum corresponds to ~10⁻⁷ emu — six orders of magnitude better than vibrating-sample magnetometry.
+
+Three forward simulators capture the relevant physics:
+
+  - `simulate_mh(ordering, ...)` — tanh saturation with explicit branch offsets at ±Hc gives the canonical hysteresis loop M(H) = Ms · tanh((H ∓ Hc) / Hk). Diamagnetic samples get a negative linear slope; paramagnets get a positive slope that scales as 1/T (Curie law).
+  - `simulate_chi_T(ordering, ...)` — Curie-Weiss χ = C / (T − θ) above the ordering transition; sharp cusp at Tc / TN; optional Morin step at `morin_K` for canted-AFM systems. Sign of θ separates ferro/ferri (θ > 0, equal to Tc) from AFM (θ < 0).
+  - `simulate_chi_ac(ordering, ...)` — Casimir-du Pré (Debye) relaxation: χ(ω) = χ_S + (χ_T − χ_S) / (1 + iωτ), so χ′(ω) interpolates between the high-frequency χ_S and the static χ_T while χ″(ω) peaks at ωτ = 1. The relaxation time follows Arrhenius blocking τ(T) = τ₀ · exp(blocking_K / T) when not pinned to a fixed `tau_s`.
+
+`infer_ordering` chains these into a heuristic classifier: dc-mh uses the (Hc, Ms, Mr) triple; rf-chi-T uses the sign of θ from a Curie-Weiss fit and the steepness of dχ/dT to separate ordered from para; rf-chi-ac classifies by χ′ sign plus the presence of a χ″ loss peak.
+
+**Diagnose-pipeline integration**: the pipeline (`diagnose.py`) collects ordering type as a single high-weight evidence row (+0.7) that favours every catalog entry whose `squid_ordering` matches and rules out every entry with a different non-empty ordering — this turns the "ferrimagnetic vs canted-AFM" SQUID readout into a 50× sharper score signal than any spectroscopic feature could deliver. Tc / TN match within 5 % adds +0.5; saturation-moment match within 20 % adds +0.4. See `docs/diagnose.md` for the full scoring rules.
+
+**Out of scope**: instrument-side considerations (drift, calibration coil geometry, gradiometer pickup, He-3 cryogenics, SQUID flux noise floors, vortex pinning); pulsed magnetic field measurements; magneto-optical imaging; muon-spin-rotation-style local-field probes.
+
+**Worked output** — `examples/21_squid_magnetic_minerals.py`:
+
+![SQUID magnetic minerals](figures/examples/21_squid_magnetic_minerals.png)
+
+Five scenarios in one script: dc-SQUID hysteresis carousel (magnetite vs hematite vs ilmenite vs diamond), rf-SQUID χ(T) Curie-Weiss fit on magnetite (Tc=858 K), AC χ_ac on a superparamagnetic FeCoNi cluster (HPHT-catalyst proxy), pearl freshwater-vs-saltwater AC screening (~22× χ′ contrast at 1 Hz), and a unified `diagnose()` integration where SQUID + Raman jointly identify magnetite.

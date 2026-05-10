@@ -219,6 +219,65 @@ def draw_muon(ax):
             fontsize=10, color=NAVY, weight="bold", ha="center", va="center")
 
 
+def draw_squid_dc(ax):
+    _setup_ax(ax, "dc-SQUID — two-junction interferometer, M(H) hysteresis")
+    _box(ax, 0.3, 2.3, 1.6, 1.0, "sample\n+ Helmholtz\nbias coil", fill=GREEN)
+    _box(ax, 4.0, 2.3, 2.0, 1.0, "two-junction\nSQUID ring\n(Φ-quantised)", fill=NAVY)
+    _box(ax, 7.6, 2.3, 2.0, 1.0, "flux-locked\nfeedback\n→ V(Φ)", fill=NAVY)
+    _arrow(ax, 1.9, 2.8, 4.0, 2.8, color=GREEN, label="H_bias + M")
+    _arrow(ax, 6.0, 2.8, 7.6, 2.8, color=ORANGE, label="Φ ∝ M")
+    # Two Josephson junctions on the ring
+    cx, cy = 5.0, 2.85
+    ax.add_patch(patches.Circle((cx, cy), 0.45, fill=False, edgecolor="white", lw=1.4))
+    ax.add_patch(patches.Rectangle((cx - 0.5, cy - 0.04), 0.08, 0.08,
+                                    color=ORANGE))
+    ax.add_patch(patches.Rectangle((cx + 0.42, cy - 0.04), 0.08, 0.08,
+                                    color=ORANGE))
+    # M(H) hysteresis-loop inset
+    h = np.linspace(-1.0, 1.0, 200)
+    sat = np.tanh((h - 0.3) * 4)
+    sat2 = np.tanh((h + 0.3) * 4)
+    ax.plot(2.5 + h * 1.5, 4.6 + sat * 0.4, color=ORANGE, lw=1.4)
+    ax.plot(2.5 + h * 1.5, 4.6 + sat2 * 0.4, color=ORANGE, lw=1.4)
+    ax.text(2.5, 5.3, "M(H)", fontsize=9, ha="center", color=NAVY, weight="bold")
+    ax.text(0.9, 4.6, "−H", fontsize=8, color=GREY, va="center")
+    ax.text(4.1, 4.6, "+H", fontsize=8, color=GREY, va="center")
+    ax.text(5.0, 0.7, "→ remanence + coercivity → ferri/ferro vs canted-AFM",
+            fontsize=10, color=NAVY, weight="bold", ha="center", va="center")
+
+
+def draw_squid_rf(ax):
+    _setup_ax(ax, "rf-SQUID — single-junction tank circuit, χ(T) and χ_ac")
+    _box(ax, 0.3, 2.3, 1.6, 1.0, "sample\n+ AC drive\n+ DC bias", fill=GREEN)
+    _box(ax, 4.0, 2.3, 2.0, 1.0, "single-junction\nring + LC tank", fill=NAVY)
+    _box(ax, 7.6, 2.3, 2.0, 1.0, "rf lock-in\n→ χ′(ω) + i·χ″(ω)", fill=NAVY)
+    _arrow(ax, 1.9, 2.8, 4.0, 2.8, color=GREEN, label="H₀ + h_ac cos(ωt)")
+    _arrow(ax, 6.0, 2.8, 7.6, 2.8, color=ORANGE, label="rf carrier")
+    # Tank circuit: inductor + capacitor
+    cx, cy = 5.0, 2.85
+    ax.add_patch(patches.Circle((cx, cy), 0.4, fill=False, edgecolor="white", lw=1.4))
+    ax.add_patch(patches.Rectangle((cx + 0.36, cy - 0.04), 0.08, 0.08,
+                                    color=ORANGE))  # one junction only
+    # χ′ vs ω sigmoid + χ″ peak
+    omega_log = np.linspace(-3, 3, 200)
+    chip = 1.0 / (1.0 + 10 ** (2 * omega_log))
+    chipp = 0.5 * (1.0 / np.cosh(2 * omega_log))
+    ax.plot(2.5 + omega_log * 0.4, 4.5 + chip * 0.6, color=NAVY, lw=1.3)
+    ax.plot(2.5 + omega_log * 0.4, 4.5 + chipp * 0.6, color=ORANGE, lw=1.3)
+    ax.text(2.5, 5.4, "χ′, χ″ vs log ω", fontsize=9, ha="center", color=NAVY, weight="bold")
+    ax.text(2.5, 4.4, "peak at ωτ=1", fontsize=8, color=ORANGE, ha="center")
+    ax.text(5.0, 0.7, "→ Curie/Néel temperature, Weiss θ, AC loss peak (1/τ)",
+            fontsize=10, color=NAVY, weight="bold", ha="center", va="center")
+
+
+def draw_squid(ax):
+    """Combined dc-SQUID + rf-SQUID schematic on a wide canvas (called by build_one)."""
+    # `ax` is unused — see `build_one` which passes through to a 2-panel figure.
+    raise NotImplementedError(
+        "draw_squid is rendered via the multi-panel path in build_one"
+    )
+
+
 SCHEMATIC_BUILDERS = {
     "raman": draw_raman,
     "xrf": draw_xrf,
@@ -227,10 +286,20 @@ SCHEMATIC_BUILDERS = {
     "epr": draw_epr,
     "laicpms": draw_laicpms,
     "muon": draw_muon,
+    "squid": draw_squid,  # routed via build_one's 2-panel branch
 }
 
 
 def build_one(name: str, output_path: Path) -> None:
+    if name == "squid":
+        # Side-by-side dc-SQUID + rf-SQUID panels on a wider canvas.
+        fig, axes = plt.subplots(1, 2, figsize=(16, 5.4))
+        draw_squid_dc(axes[0])
+        draw_squid_rf(axes[1])
+        fig.tight_layout()
+        fig.savefig(output_path, dpi=150, bbox_inches="tight", facecolor="white")
+        plt.close(fig)
+        return
     fig, ax = plt.subplots(figsize=(9, 5.4))
     SCHEMATIC_BUILDERS[name](ax)
     fig.tight_layout()

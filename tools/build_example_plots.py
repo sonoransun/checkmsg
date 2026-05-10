@@ -5,13 +5,13 @@ when run in non-smoke mode. This tool runs every example end-to-end and copies t
 resulting PNG into the documentation asset tree at `docs/figures/examples/`, which
 is the path referenced by README.md, docs/techniques.md, and docs/curriculum.md.
 
-Total runtime is ~60–90 s for all 20 examples, so this is a one-off rebuild rather
+Total runtime is ~60–90 s for all 21 examples, so this is a one-off rebuild rather
 than a CI step. The presence-check test in `tests/test_docs_tools.py` is the
 guardrail that catches stale or missing image references.
 
 Usage:
-    python tools/build_example_plots.py                     # rebuild all 20
-    python tools/build_example_plots.py --only 19,20        # rebuild a subset
+    python tools/build_example_plots.py                     # rebuild all 21
+    python tools/build_example_plots.py --only 20,21        # rebuild a subset
     python tools/build_example_plots.py --output docs/figures/examples
 """
 

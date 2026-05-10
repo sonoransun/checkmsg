@@ -26,6 +26,7 @@ from checkmsg import epr as epr_mod
 from checkmsg import libs as libs_mod
 from checkmsg import minerals
 from checkmsg import raman as raman_mod
+from checkmsg import squid as squid_mod
 from checkmsg import uvvis as uvvis_mod
 from checkmsg import xrf as xrf_mod
 from checkmsg.minerals import CATALOG, MineralProfile
@@ -292,6 +293,83 @@ def _evidence_from_laicpms(spectrum: Spectrum) -> list[Evidence]:
     return out
 
 
+def _evidence_from_squid(spectrum: Spectrum) -> list[Evidence]:
+    """Translate a SQUID magnetometry observation into Evidence entries.
+
+    Ordering type (ferri/ferro/canted-AFM/AFM/paramagnetic/diamagnetic) is
+    strongly discriminatory: ferrimagnetism alone separates magnetite from
+    ~50 other catalog entries, and a measurable ferromagnetic moment in an
+    otherwise diamagnetic host (e.g. type IIa diamond) is a near-definitive
+    HPHT-treatment flag.
+
+    Weights:
+      * ordering match: +0.7 (favours every catalog entry whose
+        `squid_ordering` matches; rules out every entry with a different
+        non-empty ordering).
+      * Tc/TN within 5 % of catalog: +0.5 (favours just that mineral).
+      * saturation moment within 20 % of catalog: +0.4.
+    """
+    if spectrum.technique not in ("squid-mh", "squid-chi"):
+        return []
+    from checkmsg.squid import from_spectrum as _from_spectrum
+    try:
+        meas = _from_spectrum(spectrum)
+        result = squid_mod.analyze(meas)
+    except Exception:
+        return []
+
+    out: list[Evidence] = []
+    extracted = result.extracted
+    obs_ord = extracted.get("ordering", "")
+    if not obs_ord:
+        return out
+
+    # Ordering match emits one Evidence: favours every profile whose
+    # squid_ordering matches, rules out every profile with a *different*
+    # non-empty ordering.
+    favoured = [n for n, p in CATALOG.items() if p.squid_ordering == obs_ord]
+    ruled_out = [n for n, p in CATALOG.items()
+                 if p.squid_ordering and p.squid_ordering != obs_ord]
+    out.append(Evidence(
+        technique="squid",
+        observation=f"magnetic ordering: {obs_ord}",
+        weight=0.7,
+        favors=tuple(favoured),
+        rules_out=tuple(ruled_out),
+    ))
+
+    # Curie / Néel temperature match.
+    tc_obs = float(extracted.get("curie_K", 0.0) or extracted.get("neel_K", 0.0))
+    if tc_obs > 0.0:
+        for name, p in CATALOG.items():
+            tc_ref = p.squid_curie_K or p.squid_neel_K
+            if tc_ref <= 0.0:
+                continue
+            if abs(tc_obs - tc_ref) <= 0.05 * tc_ref:
+                out.append(Evidence(
+                    technique="squid",
+                    observation=f"ordering temperature {tc_obs:.0f} K matches {name}",
+                    weight=0.5,
+                    favors=(name,),
+                ))
+
+    # Saturation moment match (only meaningful for ordered phases).
+    ms_obs = float(extracted.get("saturation_emu_g", 0.0))
+    if ms_obs > 1.0:  # below 1 emu/g, the slope is paramagnetic noise
+        for name, p in CATALOG.items():
+            if p.squid_saturation_emu_g <= 0.0:
+                continue
+            if abs(ms_obs - p.squid_saturation_emu_g) <= 0.20 * p.squid_saturation_emu_g:
+                out.append(Evidence(
+                    technique="squid",
+                    observation=f"saturation moment {ms_obs:.1f} emu/g matches {name}",
+                    weight=0.4,
+                    favors=(name,),
+                ))
+
+    return out
+
+
 # ---------- Scoring + reasoning ----------
 
 
@@ -335,7 +413,12 @@ def _follow_ups(spectra_techniques: set[str], top_score: float, second_score: fl
     margin = top_score - second_score
     if top_score < 1.0:
         recs.append("Confidence is low; provide additional spectra to narrow the diagnosis.")
-    missing = {"raman", "xrf", "libs", "uvvis", "epr", "laicpms"} - spectra_techniques
+    # Treat both SQUID literals as the same logical technique for follow-up purposes.
+    seen_squid = bool(spectra_techniques & {"squid-mh", "squid-chi"})
+    seen = set(spectra_techniques)
+    if seen_squid:
+        seen |= {"squid"}
+    missing = {"raman", "xrf", "libs", "uvvis", "epr", "laicpms", "squid"} - seen
     if missing:
         recs.append("Missing techniques: " + ", ".join(sorted(missing)))
     if margin < 0.5 and top_score > 0:
@@ -372,6 +455,8 @@ def diagnose(
             evidence.extend(_evidence_from_epr(s, frequency_GHz))
         elif s.technique == "laicpms":
             evidence.extend(_evidence_from_laicpms(s))
+        elif s.technique in ("squid-mh", "squid-chi"):
+            evidence.extend(_evidence_from_squid(s))
 
     scores = _aggregate_scores(evidence)
     if candidates is not None:
@@ -433,4 +518,8 @@ def diagnose_profile(profile: MineralProfile, *,
         epr_spec = minerals.synthesize_epr(profile, frequency_GHz=epr_frequency_GHz, seed=seed)
         if epr_spec is not None:
             spectra.append(epr_spec)
+    if profile.squid_ordering:
+        squid_meas = minerals.synthesize_squid_mh(profile, seed=seed)
+        if squid_meas is not None:
+            spectra.append(squid_mod.to_spectrum(squid_meas))
     return diagnose(spectra, frequency_GHz=epr_frequency_GHz)

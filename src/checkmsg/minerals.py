@@ -58,6 +58,17 @@ class MineralProfile:
     diagnostic_features: tuple[str, ...] = ()
     references: tuple[str, ...] = ()
     is_amorphous: bool = False
+    # SQUID magnetometry signature (unset = not characterised).
+    # `squid_ordering` is one of: "diamagnetic", "paramagnetic", "ferromagnetic",
+    # "ferrimagnetic", "antiferromagnetic", "canted-afm", or "" if unknown.
+    squid_ordering: str = ""
+    squid_curie_K: float = 0.0
+    squid_neel_K: float = 0.0
+    squid_weiss_K: float = 0.0
+    squid_saturation_emu_g: float = 0.0
+    squid_susceptibility_si: tuple[float, float] = (0.0, 0.0)
+    squid_coercivity_mT: float = 0.0
+    squid_morin_K: float = 0.0
 
     def __post_init__(self) -> None:
         if not self.name:
@@ -88,6 +99,8 @@ CATALOG: dict[str, MineralProfile] = {
                              "transparent below 225 nm",
                              "highest hardness of any natural material"),
         references=("Solin & Ramdas 1970", "Knight & White 1992"),
+        squid_ordering="diamagnetic",
+        squid_susceptibility_si=(-2.2e-5, -2.0e-5),
     ),
     "moissanite": MineralProfile(
         name="moissanite", species="silicon carbide", chemical_formula="SiC",
@@ -339,6 +352,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("garnet-class Raman at 1063 cm-1",
                              "Mg-dominant XRF chemistry"),
         references=("Kolesov & Geiger 1998",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-1.0,
+        squid_susceptibility_si=(1.0e-6, 5.0e-6),
     ),
     "almandine": MineralProfile(
         name="almandine", species="garnet",
@@ -353,6 +369,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("Fe-dominant XRF chemistry",
                              "highest density of common garnets"),
         references=("Kolesov & Geiger 1998",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-5.0,
+        squid_susceptibility_si=(5.0e-5, 1.5e-4),
     ),
     "spessartine": MineralProfile(
         name="spessartine", species="garnet",
@@ -399,6 +418,9 @@ CATALOG: dict[str, MineralProfile] = {
                              "high RI 1.89",
                              "demantoid green from Cr3+"),
         references=("Kolesov & Geiger 1998",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-3.0,
+        squid_susceptibility_si=(2.0e-5, 1.0e-4),
     ),
     "rhodolite": MineralProfile(
         name="rhodolite", species="garnet",
@@ -413,6 +435,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("Mg + Fe mixed chemistry",
                              "raspberry purple distinguishes from pure pyrope/almandine"),
         references=("Kolesov & Geiger 1998",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-3.0,
+        squid_susceptibility_si=(2.0e-5, 7.0e-5),
     ),
     "tsavorite": MineralProfile(
         name="tsavorite", species="garnet",
@@ -459,6 +484,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("224 cm-1 amphibole low-frequency mode",
                              "lower density than jadeite"),
         references=("Mao et al. 2007",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-5.0,
+        squid_susceptibility_si=(1.0e-5, 5.0e-5),
     ),
     "serpentine": MineralProfile(
         name="serpentine", species="serpentine group",
@@ -473,6 +501,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("low Mohs hardness 2.5–5.5 (scratched easily)",
                              "385 + 685 cm-1 serpentine pattern"),
         references=("Rinaudo et al. 2003",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-3.0,
+        squid_susceptibility_si=(5.0e-6, 3.0e-5),
     ),
     "aventurine_quartz": MineralProfile(
         name="aventurine_quartz", species="quartz",
@@ -521,6 +552,9 @@ CATALOG: dict[str, MineralProfile] = {
                              "fluorescent red R-line emission near 694 nm",
                              "Cr3+ EPR fine-structure pattern"),
         references=("Manenkov & Prokhorov 1956",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-2.0,
+        squid_susceptibility_si=(1.0e-7, 1.5e-5),
     ),
     "red_spinel": MineralProfile(
         name="red_spinel", species="spinel",
@@ -537,6 +571,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("Raman 666 + 766 cm-1 doublet (spinel)",
                              "Cr3+ chromophore but cubic crystal (not trigonal corundum)"),
         references=("Cynn et al. 1992", "Wood & Nassau 1968"),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-2.0,
+        squid_susceptibility_si=(1.0e-7, 5.0e-6),
     ),
     "red_beryl": MineralProfile(
         name="red_beryl", species="beryl",
@@ -553,6 +590,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("beryl Raman pattern with Mn3+ at 480 nm",
                              "extremely rare gem (Utah's Wah Wah Mountains)"),
         references=("Shigley et al. 2003",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-2.0,
+        squid_susceptibility_si=(5.0e-6, 5.0e-5),
     ),
     "rubellite": MineralProfile(
         name="rubellite", species="tourmaline",
@@ -570,6 +610,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("707 cm-1 tourmaline ring mode",
                              "B + Li signature"),
         references=("Hawthorne & Henry 1999",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-2.0,
+        squid_susceptibility_si=(5.0e-6, 3.0e-5),
     ),
     "rhodochrosite": MineralProfile(
         name="rhodochrosite", species="carbonate",
@@ -585,6 +628,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("1086 cm-1 carbonate ν1 stretch",
                              "low Mohs hardness 3.5-4 (carbonate)"),
         references=("Edwards et al. 2005",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-3.0,
+        squid_susceptibility_si=(5.0e-5, 5.0e-4),
     ),
 
     # -------------------- Black opaque stones --------------------
@@ -601,6 +647,12 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("Raman 292 cm-1 + 411 cm-1 hematite signature",
                              "blood-red streak diagnostic vs magnetite"),
         references=("de Faria et al. 1997",),
+        squid_ordering="canted-afm",
+        squid_neel_K=948.0,
+        squid_saturation_emu_g=0.4,
+        squid_susceptibility_si=(5.0e-4, 4.0e-3),
+        squid_coercivity_mT=300.0,
+        squid_morin_K=263.0,
     ),
     "magnetite": MineralProfile(
         name="magnetite", species="iron oxide",
@@ -614,6 +666,11 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("magnetic — picks up steel pin",
                              "broad 670 cm-1 Raman A1g mode"),
         references=("Shebanova & Lazor 2003",),
+        squid_ordering="ferrimagnetic",
+        squid_curie_K=858.0,
+        squid_saturation_emu_g=92.0,
+        squid_susceptibility_si=(1.0e-3, 5.7e-3),
+        squid_coercivity_mT=20.0,
     ),
     "obsidian": MineralProfile(
         name="obsidian", species="volcanic glass",
@@ -628,6 +685,9 @@ CATALOG: dict[str, MineralProfile] = {
                              "concoidal fracture, lustrous"),
         references=("McMillan 1984",),
         is_amorphous=True,
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-5.0,
+        squid_susceptibility_si=(5.0e-6, 3.0e-5),
     ),
     "jet": MineralProfile(
         name="jet", species="lignite",
@@ -673,6 +733,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("707 cm-1 tourmaline ring mode",
                              "Fe3 chemistry (vs Li-elbaite)"),
         references=("Hawthorne & Henry 1999",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-3.0,
+        squid_susceptibility_si=(5.0e-5, 3.0e-4),
     ),
 
     # -------------------- Tourmaline species --------------------
@@ -750,6 +813,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("Fe3+ chromophore in geological context",
                              "weak Fe3+ EPR at low temperature"),
         references=("Cohen 1985",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-1.0,
+        squid_susceptibility_si=(1.0e-7, 5.0e-6),
     ),
     "citrine_heat_treated": MineralProfile(
         name="citrine_heat_treated", species="quartz",
@@ -767,6 +833,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("residual radiation-induced E1' centre from prior amethyst stage",
                              "Al-hole survivor in EPR despite heat treatment"),
         references=("Mackey & Sander 1972", "Lameiras et al. 2008"),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-1.0,
+        squid_susceptibility_si=(1.0e-7, 5.0e-6),
     ),
     "amethyst": MineralProfile(
         name="amethyst", species="quartz",
@@ -782,6 +851,8 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("Fe4+ on tetrahedral site post-irradiation",
                              "violet 545 nm absorption band"),
         references=("Cohen 1985",),
+        squid_ordering="diamagnetic",
+        squid_susceptibility_si=(-1.5e-5, -1.3e-5),
     ),
     "smoky_quartz": MineralProfile(
         name="smoky_quartz", species="quartz",
@@ -797,6 +868,8 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("Al-hole colour centre from irradiation",
                              "E1' EPR + brown body colour"),
         references=("Weil 1984",),
+        squid_ordering="diamagnetic",
+        squid_susceptibility_si=(-1.5e-5, -1.3e-5),
     ),
 
     # -------------------- Chrysoberyl --------------------
@@ -816,6 +889,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("935 cm-1 chrysoberyl Raman",
                              "Cr3+ chromophore producing the green-red 'alexandrite effect'"),
         references=("Schmetzer 2006",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-2.0,
+        squid_susceptibility_si=(1.0e-7, 1.5e-5),
     ),
     "chrysoberyl_yellow": MineralProfile(
         name="chrysoberyl_yellow", species="chrysoberyl",
@@ -865,6 +941,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("aragonite Raman pattern (1086 cm-1 ν1)",
                              "low Mn (~25 ppm), saltwater Pb isotope signature"),
         references=("Urmos et al. 1991",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-1.0,
+        squid_susceptibility_si=(1.0e-7, 5.0e-6),
     ),
     "pearl_akoya": MineralProfile(
         name="pearl_akoya", species="aragonite",
@@ -881,6 +960,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("freshwater-shell bead Pb isotope signature",
                              "low ²⁰⁶Pb/²⁰⁴Pb (~16-17) from old continental Pb"),
         references=("Bolzicco et al. 2017",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-1.0,
+        squid_susceptibility_si=(1.0e-7, 5.0e-6),
     ),
     "pearl_freshwater": MineralProfile(
         name="pearl_freshwater", species="aragonite",
@@ -897,6 +979,9 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("high Mn (>500 ppm) from freshwater environment",
                              "low Sr compared to saltwater pearls"),
         references=("Bolzicco et al. 2017",),
+        squid_ordering="paramagnetic",
+        squid_weiss_K=-1.0,
+        squid_susceptibility_si=(1.0e-5, 1.0e-4),
     ),
     "coral": MineralProfile(
         name="coral", species="aragonite/calcite",
@@ -911,6 +996,8 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("Mg-calcite chemistry (vs aragonite of pearls)",
                              "carotenoid Raman fluorescence in red varieties"),
         references=("Urmos et al. 1991",),
+        squid_ordering="diamagnetic",
+        squid_susceptibility_si=(-1.4e-5, -1.0e-5),
     ),
     "ivory": MineralProfile(
         name="ivory", species="hydroxyapatite",
@@ -925,6 +1012,8 @@ CATALOG: dict[str, MineralProfile] = {
         diagnostic_features=("962 cm-1 PO4 ν1 hydroxyapatite",
                              "Schreger lines visible under microscope"),
         references=("Penel et al. 1998",),
+        squid_ordering="diamagnetic",
+        squid_susceptibility_si=(-1.0e-5, -8.0e-6),
     ),
 }
 
@@ -1119,3 +1208,90 @@ def synthesize_libs(profile: MineralProfile, *,
                                  sigma=0.10, gamma=0.05))
     return generate(peaks, fields_nm, technique="libs", units="nm",
                     noise=noise, seed=seed)
+
+
+def _profile_squid_susceptibility(profile: MineralProfile) -> float:
+    """Return the midpoint of the profile's room-T volume susceptibility range."""
+    lo, hi = profile.squid_susceptibility_si
+    if lo == 0.0 and hi == 0.0:
+        return 0.0
+    return 0.5 * (lo + hi)
+
+
+def synthesize_squid_mh(profile: MineralProfile, *,
+                        fields_mT: np.ndarray | None = None,
+                        temperature_K: float = 295.0,
+                        noise: float = 0.005,
+                        seed: int | None = 0):
+    """Synthesise a dc-SQUID M(H) hysteresis loop for the profile.
+
+    Returns ``None`` when the profile has no `squid_ordering` set.
+    """
+    if not profile.squid_ordering:
+        return None
+    from checkmsg.squid import simulate_mh
+    chi = _profile_squid_susceptibility(profile)
+    return simulate_mh(
+        profile.squid_ordering,
+        fields_mT=fields_mT,
+        saturation_emu_g=profile.squid_saturation_emu_g,
+        coercivity_mT=profile.squid_coercivity_mT,
+        susceptibility_si=chi,
+        temperature_K=temperature_K,
+        noise=noise,
+        seed=seed,
+    )
+
+
+def synthesize_squid_chi_T(profile: MineralProfile, *,
+                           temperatures_K: np.ndarray | None = None,
+                           applied_field_mT: float = 10.0,
+                           noise: float = 0.005,
+                           seed: int | None = 0):
+    """Synthesise an rf-SQUID χ(T) sweep from a profile."""
+    if not profile.squid_ordering:
+        return None
+    from checkmsg.squid import simulate_chi_T
+    chi = _profile_squid_susceptibility(profile)
+    return simulate_chi_T(
+        profile.squid_ordering,
+        temperatures_K=temperatures_K,
+        curie_K=profile.squid_curie_K,
+        neel_K=profile.squid_neel_K,
+        weiss_K=profile.squid_weiss_K,
+        susceptibility_si=chi,
+        saturation_emu_g=profile.squid_saturation_emu_g,
+        applied_field_mT=applied_field_mT,
+        morin_K=profile.squid_morin_K,
+        noise=noise,
+        seed=seed,
+    )
+
+
+def synthesize_squid_chi_ac(profile: MineralProfile, *,
+                            frequencies_Hz: np.ndarray | None = None,
+                            temperature_K: float = 295.0,
+                            blocking_temp_K: float = 100.0,
+                            noise: float = 0.005,
+                            seed: int | None = 0):
+    """Synthesise an rf-SQUID AC susceptibility sweep from a profile.
+
+    Uses the profile's room-T susceptibility as χ_T and 1% of it as χ_S
+    (Casimir-du Pré high-frequency limit). Diamagnetic profiles produce a flat
+    negative response without a relaxation peak.
+    """
+    if not profile.squid_ordering:
+        return None
+    from checkmsg.squid import simulate_chi_ac
+    chi_T = abs(_profile_squid_susceptibility(profile)) or 1.0e-5
+    chi_S = chi_T * 0.01
+    return simulate_chi_ac(
+        profile.squid_ordering,
+        frequencies_Hz=frequencies_Hz,
+        blocking_temp_K=blocking_temp_K,
+        temperature_K=temperature_K,
+        chi_T=chi_T,
+        chi_S=chi_S,
+        noise=noise,
+        seed=seed,
+    )
