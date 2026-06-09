@@ -21,17 +21,31 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from checkmsg import epr as epr_mod
+from checkmsg import glossary as glossary_mod
 from checkmsg import libs as libs_mod
-from checkmsg import minerals
+from checkmsg import minerals, scoring
 from checkmsg import raman as raman_mod
 from checkmsg import squid as squid_mod
 from checkmsg import uvvis as uvvis_mod
 from checkmsg import xrf as xrf_mod
 from checkmsg.minerals import CATALOG, MineralProfile
 from checkmsg.refdata.epr_centers import CENTERS as EPR_CENTERS
+from checkmsg.scoring import WEIGHTS, Caveat, Conflict
 from checkmsg.spectrum import Spectrum
+
+# Shorthand for the scoring-weight registry (single source of truth in scoring.py).
+W = WEIGHTS
+
+
+class Tier(StrEnum):
+    """Sophistication tier for rendering a :class:`DiagnosticReport`."""
+
+    NOVICE = "novice"            # plain verdict + verbal confidence
+    PRACTITIONER = "practitioner"  # explained evidence, jargon expanded
+    EXPERT = "expert"            # full trace, raw scores, citations, caveats
 
 # ---------- Result data primitives ----------
 
@@ -43,6 +57,7 @@ class Evidence:
     weight: float = 1.0
     favors: tuple[str, ...] = ()    # mineral names this evidence favours
     rules_out: tuple[str, ...] = ()  # mineral names this evidence rules out
+    weight_key: str = ""             # key into scoring.WEIGHTS (for rationale lookup)
 
 
 @dataclass
@@ -62,12 +77,124 @@ class DiagnosticReport:
     evidence: list[Evidence]
     reasoning_trace: list[TraceStep]
     follow_up_recommendations: list[str]
+    # --- recalibration additions (all defaulted; back-compatible) ---
+    conflicts: list[Conflict] = field(default_factory=list)
+    confidence_band: str = "inconclusive"
+    evidence_agreement: int = 0
+    caveats: list[Caveat] = field(default_factory=list)
+    # Opt-in calibrated probability (None unless diagnose(..., calibrated=...)).
+    calibrated_confidence: float | None = None
+    calibration_method: str | None = None
 
-    def render(self) -> str:
-        """Multi-paragraph human-readable diagnostic report."""
+    def render(self, tier: Tier | str = Tier.EXPERT) -> str:
+        """Human-readable report at one of three sophistication tiers.
+
+        ``expert`` (the default) preserves the original detailed layout and is
+        what the CLI and examples consume. ``practitioner`` explains the
+        evidence in plain language with jargon expanded on first use, and
+        ``novice`` returns a single plain-language verdict line.
+        """
+        tier = Tier(tier)
+        if tier is Tier.NOVICE:
+            return self._render_novice()
+        if tier is Tier.PRACTITIONER:
+            return self._render_practitioner()
+        return self._render_expert()
+
+    # ---- verdict / glossary helpers ----
+
+    def _verdict_display(self, *, with_formula: bool = True) -> str:
+        """Enrich the bare verdict name with species (and optionally formula)."""
+        if not self.verdict:
+            return ""
+        label = self.verdict.replace("_", " ")
+        try:
+            p = minerals.get(self.verdict)
+        except Exception:
+            return label
+        extra: list[str] = []
+        if p.species and p.species != self.verdict:
+            extra.append(p.species)
+        if with_formula and p.chemical_formula:
+            extra.append(p.chemical_formula)
+        return f"{label} ({', '.join(extra)})" if extra else label
+
+    def _glossary_block(self) -> list[str]:
+        terms = glossary_mod.glossary_for(self)
+        if not terms:
+            return []
+        out = ["Glossary:"]
+        for t in terms:
+            out.append(f"  {t.canonical} — {t.description}")
+        return out
+
+    # ---- tier renderers ----
+
+    def _render_novice(self) -> str:
+        if not self.verdict:
+            return ("Most likely: no confident identification yet — "
+                    "more measurements are needed.")
+        label = self.verdict.replace("_", " ").capitalize()
+        lines = [f"Most likely: {label} — {self.confidence_band} confidence."]
+        try:
+            p = minerals.get(self.verdict)
+            if p.common_colors or p.species:
+                colours = ", ".join(p.common_colors) if p.common_colors else "natural"
+                lines.append(f"This looks like a {colours} {p.species or 'gem'}.")
+        except Exception:
+            pass
+        if self.confidence_band in ("low", "inconclusive"):
+            lines.append("This is tentative — confirm with further testing.")
+        if self.conflicts:
+            lines.append("Some measurements disagree, so treat this as provisional.")
+        return "\n".join(lines)
+
+    def _render_practitioner(self) -> str:
+        seen: set[str] = set()
+        lines: list[str] = []
+        if self.verdict:
+            lines.append(
+                f"Verdict: {self._verdict_display()}  (confidence: {self.confidence_band})")
+        else:
+            lines.append("Verdict: no confident identification")
+        why: list[str] = []
+        for ev in self.evidence:
+            if self.verdict and self.verdict in ev.favors:
+                why.append(_practitioner_evidence_line(ev, seen))
+        if why:
+            lines.append("Why:")
+            for w in why[:8]:
+                lines.append(f"  - {w}")
+        ruled: list[str] = []
+        for st in self.reasoning_trace:
+            for c in st.confusables_ruled_out:
+                if c not in ruled and c != self.verdict:
+                    ruled.append(c)
+        if ruled:
+            lines.append("Look-alikes ruled out: "
+                         + ", ".join(r.replace("_", " ") for r in ruled[:8]))
+        if self.conflicts:
+            lines.append("Conflicts:")
+            for c in self.conflicts:
+                lines.append(f"  ! {glossary_mod.expand_first_use(c.detail, seen)}")
+        if self.follow_up_recommendations:
+            lines.append("Suggested next steps:")
+            for r in self.follow_up_recommendations[:4]:
+                lines.append(f"  - {r}")
+        block = self._glossary_block()
+        if block:
+            lines.append("")
+            lines.extend(block)
+        return "\n".join(lines)
+
+    def _render_expert(self) -> str:
         lines: list[str] = ["=== Check M.S.G. Diagnostic Report ==="]
         if self.verdict:
-            lines.append(f"Verdict: {self.verdict}  (confidence {self.confidence:.2f})")
+            lines.append(
+                f"Verdict: {self.verdict}  (confidence: {self.confidence_band.upper()} "
+                f"— separation ratio {self.confidence:.2f}, "
+                f"{self.evidence_agreement} technique(s) agree)"
+            )
         else:
             lines.append("Verdict: insufficient evidence")
         lines.append("")
@@ -84,11 +211,44 @@ class DiagnosticReport:
             if step.confusables_ruled_out:
                 lines.append(f"       ruled out: {', '.join(step.confusables_ruled_out)}")
         lines.append("")
+        if self.conflicts:
+            lines.append("Conflicts:")
+            for c in self.conflicts:
+                lines.append(f"  ! {c.detail}")
+            lines.append("")
         if self.follow_up_recommendations:
             lines.append("Recommended follow-up:")
             for r in self.follow_up_recommendations:
                 lines.append(f"  - {r}")
+            lines.append("")
+        block = self._glossary_block()
+        if block:
+            lines.extend(block)
+            lines.append("")
+        if self.caveats:
+            lines.append("Caveats:")
+            for cav in self.caveats:
+                acc = "" if cav.measurement_accurate else " [not measurement-accurate]"
+                lines.append(f"  ~ {cav.technique}: {cav.text}{acc}")
+            lines.append("")
+        if self.calibrated_confidence is not None:
+            lines.append(
+                f"Calibrated P(correct): {self.calibrated_confidence:.2f} "
+                f"(method={self.calibration_method}; synthetic-trained — not a field guarantee)")
+            lines.append("")
+        lines.append(f"Disclaimer: {scoring.SERVICE_DISCLAIMER}")
         return "\n".join(lines)
+
+
+def _practitioner_evidence_line(ev: Evidence, seen: set[str]) -> str:
+    """Render one Evidence in plain language, expanding jargon on first use."""
+    obs = ev.observation
+    if obs.startswith("chromophore "):
+        name = obs[len("chromophore "):]
+        gt = glossary_mod.define(name)
+        if gt and gt.description:
+            return f"colour analysis — {gt.description}"
+    return f"{ev.technique}: {glossary_mod.expand_first_use(obs, seen)}"
 
 
 # ---------- Per-technique evidence collection ----------
@@ -99,7 +259,8 @@ def _evidence_from_raman(spectrum: Spectrum) -> list[Evidence]:
     cleaned = raman_mod.preprocess_raman(spectrum)
     detected = raman_mod.detect(cleaned, min_snr=8.0)
     if not detected:
-        return [Evidence(technique="raman", observation="no Raman peaks detected", weight=0.5,
+        return [Evidence(technique="raman", observation="no Raman peaks detected",
+                        weight=W["raman.no_peaks"].value, weight_key="raman.no_peaks",
                         rules_out=tuple(n for n, p in CATALOG.items()
                                         if p.raman_peaks_cm and not p.is_amorphous))]
     out: list[Evidence] = []
@@ -108,14 +269,14 @@ def _evidence_from_raman(spectrum: Spectrum) -> list[Evidence]:
     out.append(Evidence(
         technique="raman",
         observation=f"dominant peak at {biggest.position:.1f} cm-1 (FWHM {biggest.width:.1f})",
-        weight=1.0,
+        weight=W["raman.dominant_peak"].value, weight_key="raman.dominant_peak",
     ))
     # Test amorphous: dominant FWHM > 60 cm-1 + no narrow peak above 50% threshold.
     if biggest.width > 50.0 and not any(p.width < 15 and p.height > 0.5 * biggest.height for p in detected):
         out.append(Evidence(
             technique="raman",
             observation="amorphous-like envelope (no sharp peaks)",
-            weight=1.5,
+            weight=W["raman.amorphous"].value, weight_key="raman.amorphous",
             favors=tuple(n for n, p in CATALOG.items() if p.is_amorphous),
             rules_out=tuple(n for n, p in CATALOG.items()
                           if p.raman_peaks_cm and not p.is_amorphous),
@@ -136,7 +297,8 @@ def _evidence_from_raman(spectrum: Spectrum) -> list[Evidence]:
             out.append(Evidence(
                 technique="raman",
                 observation=f"matched {matched}/{len(profile.raman_peaks_cm)} catalog peaks for {name}",
-                weight=1.0 * matched / len(profile.raman_peaks_cm),
+                weight=W["raman.match_unit"].value * matched / len(profile.raman_peaks_cm),
+                weight_key="raman.match_unit",
                 favors=(name,),
             ))
     return out
@@ -154,14 +316,14 @@ def _evidence_from_uvvis(spectrum: Spectrum) -> list[Evidence]:
         out.append(Evidence(
             technique="uvvis",
             observation=f"chromophore {ch.name}",
-            weight=0.6,
+            weight=W["uvvis.chromophore"].value, weight_key="uvvis.chromophore",
             favors=tuple(favoured),
         ))
     if not res.chromophores():
         out.append(Evidence(
             technique="uvvis",
             observation="no recognised chromophore bands",
-            weight=0.3,
+            weight=W["uvvis.no_chromophore"].value, weight_key="uvvis.no_chromophore",
             favors=tuple(n for n, p in CATALOG.items() if not p.uvvis_bands_nm),
         ))
     return out
@@ -184,7 +346,7 @@ def _evidence_from_xrf(spectrum: Spectrum) -> list[Evidence]:
     if detected:
         out.append(Evidence(technique="xrf",
                             observation=f"elements detected: {', '.join(sorted(detected))}",
-                            weight=0.4))
+                            weight=W["xrf.detected"].value, weight_key="xrf.detected"))
     for name, p in CATALOG.items():
         if not p.xrf_signature:
             continue
@@ -194,7 +356,8 @@ def _evidence_from_xrf(spectrum: Spectrum) -> list[Evidence]:
             out.append(Evidence(
                 technique="xrf",
                 observation=f"all major elements of {name} present",
-                weight=0.4 * len(majors_required),
+                weight=W["xrf.major_set_unit"].value * len(majors_required),
+                weight_key="xrf.major_set_unit",
                 favors=(name,),
             ))
     # Per-element diagnostic credit: each detected trace/minor element favors
@@ -209,7 +372,7 @@ def _evidence_from_xrf(spectrum: Spectrum) -> list[Evidence]:
             out.append(Evidence(
                 technique="xrf",
                 observation=f"diagnostic element {el} present",
-                weight=0.3,
+                weight=W["xrf.per_element"].value, weight_key="xrf.per_element",
                 favors=tuple(favoured),
             ))
     return out
@@ -223,7 +386,7 @@ def _evidence_from_libs(spectrum: Spectrum) -> list[Evidence]:
     if detected:
         out.append(Evidence(technique="libs",
                             observation=f"emission lines: {', '.join(sorted(detected))}",
-                            weight=0.3))
+                            weight=W["libs.detected"].value, weight_key="libs.detected"))
     for name, p in CATALOG.items():
         if not p.libs_signature:
             continue
@@ -232,7 +395,8 @@ def _evidence_from_libs(spectrum: Spectrum) -> list[Evidence]:
             out.append(Evidence(
                 technique="libs",
                 observation=f"LIBS supports {name} chemistry",
-                weight=0.3 * len(majors_required),
+                weight=W["libs.major_set_unit"].value * len(majors_required),
+                weight_key="libs.major_set_unit",
                 favors=(name,),
             ))
     # Per-element credit (excludes ubiquitous matrix elements).
@@ -245,7 +409,7 @@ def _evidence_from_libs(spectrum: Spectrum) -> list[Evidence]:
             out.append(Evidence(
                 technique="libs",
                 observation=f"LIBS detected diagnostic {el}",
-                weight=0.25,
+                weight=W["libs.per_element"].value, weight_key="libs.per_element",
                 favors=tuple(favoured),
             ))
     return out
@@ -266,7 +430,7 @@ def _evidence_from_epr(spectrum: Spectrum, frequency_GHz: float | None) -> list[
         out.append(Evidence(
             technique="epr",
             observation=f"top EPR centre: {center_name} (cosine {res.best.cosine:.2f})",
-            weight=0.7,
+            weight=W["epr.center_match"].value, weight_key="epr.center_match",
             favors=tuple(favoured),
         ))
     return out
@@ -287,7 +451,7 @@ def _evidence_from_laicpms(spectrum: Spectrum) -> list[Evidence]:
             out.append(Evidence(
                 technique="laicpms",
                 observation=f"diagnostic isotopes for {name} present",
-                weight=0.5,
+                weight=W["laicpms.isotope_set"].value, weight_key="laicpms.isotope_set",
                 favors=(name,),
             ))
     return out
@@ -333,7 +497,7 @@ def _evidence_from_squid(spectrum: Spectrum) -> list[Evidence]:
     out.append(Evidence(
         technique="squid",
         observation=f"magnetic ordering: {obs_ord}",
-        weight=0.7,
+        weight=W["squid.ordering"].value, weight_key="squid.ordering",
         favors=tuple(favoured),
         rules_out=tuple(ruled_out),
     ))
@@ -349,7 +513,7 @@ def _evidence_from_squid(spectrum: Spectrum) -> list[Evidence]:
                 out.append(Evidence(
                     technique="squid",
                     observation=f"ordering temperature {tc_obs:.0f} K matches {name}",
-                    weight=0.5,
+                    weight=W["squid.tc_tn"].value, weight_key="squid.tc_tn",
                     favors=(name,),
                 ))
 
@@ -363,10 +527,139 @@ def _evidence_from_squid(spectrum: Spectrum) -> list[Evidence]:
                 out.append(Evidence(
                     technique="squid",
                     observation=f"saturation moment {ms_obs:.1f} emu/g matches {name}",
-                    weight=0.4,
+                    weight=W["squid.saturation"].value, weight_key="squid.saturation",
                     favors=(name,),
                 ))
 
+    return out
+
+
+def _evidence_from_pl(spectrum: Spectrum) -> list[Evidence]:
+    if spectrum.technique != "pl":
+        return []
+    from checkmsg import pl as pl_mod
+    try:
+        res = pl_mod.analyze(spectrum)
+    except Exception:
+        return []
+    out: list[Evidence] = []
+    seen: set[str] = set()
+    for pos, bs in res.assignments:
+        if bs.name in seen:
+            continue
+        seen.add(bs.name)
+        favoured = [n for n, p in CATALOG.items()
+                    if any(abs(pos - c) <= 4.0 for c in p.pl_centers)]
+        if favoured:
+            out.append(Evidence(
+                technique="pl", observation=f"PL line {bs.name} at {pos:.0f} nm",
+                weight=W["pl.line_match"].value, weight_key="pl.line_match",
+                favors=tuple(favoured)))
+    if res.has_synthetic_marker():
+        favoured = [n for n, p in CATALOG.items()
+                    if any(abs(736.6 - c) <= 4.0 for c in p.pl_centers)]
+        out.append(Evidence(
+            technique="pl", observation="Si-V centre present (CVD-synthetic marker)",
+            weight=W["pl.synthetic_marker"].value, weight_key="pl.synthetic_marker",
+            favors=tuple(favoured)))
+    return out
+
+
+def _evidence_from_ftir(spectrum: Spectrum) -> list[Evidence]:
+    if spectrum.technique != "ftir":
+        return []
+    from checkmsg import ftir as ftir_mod
+    try:
+        res = ftir_mod.analyze(spectrum)
+    except Exception:
+        return []
+    out: list[Evidence] = []
+    if res.diamond_type:
+        favoured = [n for n, p in CATALOG.items() if p.diamond_type == res.diamond_type]
+        ruled = [n for n, p in CATALOG.items()
+                 if p.diamond_type and p.diamond_type != res.diamond_type]
+        out.append(Evidence(
+            technique="ftir", observation=f"diamond IR Type {res.diamond_type}",
+            weight=W["ftir.diamond_type"].value, weight_key="ftir.diamond_type",
+            favors=tuple(favoured), rules_out=tuple(ruled)))
+    seen: set[str] = set()
+    for pos, bs in res.assignments:
+        if bs.name.startswith("diamond Type") or bs.name in seen:
+            continue
+        seen.add(bs.name)
+        favoured = [n for n, p in CATALOG.items()
+                    if any(abs(pos - b) <= 20.0 for b in p.ftir_bands)]
+        if not favoured:
+            continue
+        if "polymer" in bs.name:
+            out.append(Evidence(
+                technique="ftir", observation=f"polymer impregnation band ({bs.name})",
+                weight=W["ftir.polymer_flag"].value, weight_key="ftir.polymer_flag",
+                favors=tuple(favoured)))
+        else:
+            out.append(Evidence(
+                technique="ftir", observation=f"FTIR band {bs.name}",
+                weight=W["ftir.band_match"].value, weight_key="ftir.band_match",
+                favors=tuple(favoured)))
+    return out
+
+
+def _evidence_from_cl(spectrum: Spectrum) -> list[Evidence]:
+    if spectrum.technique != "cl":
+        return []
+    from checkmsg import cl as cl_mod
+    try:
+        res = cl_mod.analyze(spectrum)
+    except Exception:
+        return []
+    out: list[Evidence] = []
+    seen: set[str] = set()
+    for pos, bs in res.assignments:
+        if bs.name in seen:
+            continue
+        seen.add(bs.name)
+        favoured = [n for n, p in CATALOG.items()
+                    if any(abs(pos - b) <= bs.tolerance for b in p.cl_bands)]
+        if favoured:
+            out.append(Evidence(
+                technique="cl", observation=f"CL band {bs.name}",
+                weight=W["cl.band_match"].value, weight_key="cl.band_match",
+                favors=tuple(favoured)))
+    return out
+
+
+def _evidence_from_mossbauer(spectrum: Spectrum) -> list[Evidence]:
+    if spectrum.technique != "mossbauer":
+        return []
+    from checkmsg import mossbauer as moss_mod
+    from checkmsg.refdata.mossbauer_sites import SITES
+    try:
+        res = moss_mod.analyze(spectrum)
+    except Exception:
+        return []
+    out: list[Evidence] = []
+    if not res.extracted:
+        return out
+    valence = res.extracted.get("valence", "")
+    if valence in ("Fe2+", "Fe3+"):
+        favoured = [n for n, p in CATALOG.items()
+                    if any(SITES[k].valence == valence for k in p.mossbauer_sites if k in SITES)]
+        ruled = [n for n, p in CATALOG.items()
+                 if p.mossbauer_sites
+                 and all(SITES[k].valence != valence for k in p.mossbauer_sites if k in SITES)]
+        out.append(Evidence(
+            technique="mossbauer",
+            observation=f"dominant Fe valence {valence} (delta={res.extracted['delta']:.2f} mm/s)",
+            weight=W["mossbauer.valence"].value, weight_key="mossbauer.valence",
+            favors=tuple(favoured), rules_out=tuple(ruled)))
+    if res.best is not None:
+        site_key = res.best.name
+        favoured = [n for n, p in CATALOG.items() if site_key in p.mossbauer_sites]
+        if favoured:
+            out.append(Evidence(
+                technique="mossbauer", observation=f"Fe site matches {site_key}",
+                weight=W["mossbauer.site_match"].value, weight_key="mossbauer.site_match",
+                favors=tuple(favoured)))
     return out
 
 
@@ -434,8 +727,14 @@ def diagnose(
     *,
     candidates: list[str] | None = None,
     frequency_GHz: float | None = None,
+    calibrated: bool | str = False,
 ) -> DiagnosticReport:
-    """Run the full diagnostic pipeline on a set of spectra and return a report."""
+    """Run the full diagnostic pipeline on a set of spectra and return a report.
+
+    ``calibrated`` (opt-in) attaches an estimated P(correct) from the bundled
+    Platt calibrator without altering the verdict, band, or numeric confidence;
+    pass ``True``/``"platt"`` to enable it. The default path is unchanged.
+    """
     if isinstance(spectra, dict):
         spectra = list(spectra.values())
     spectra_list = list(spectra)
@@ -457,6 +756,14 @@ def diagnose(
             evidence.extend(_evidence_from_laicpms(s))
         elif s.technique in ("squid-mh", "squid-chi"):
             evidence.extend(_evidence_from_squid(s))
+        elif s.technique == "pl":
+            evidence.extend(_evidence_from_pl(s))
+        elif s.technique == "ftir":
+            evidence.extend(_evidence_from_ftir(s))
+        elif s.technique == "cl":
+            evidence.extend(_evidence_from_cl(s))
+        elif s.technique == "mossbauer":
+            evidence.extend(_evidence_from_mossbauer(s))
 
     scores = _aggregate_scores(evidence)
     if candidates is not None:
@@ -471,26 +778,66 @@ def diagnose(
     if top_score <= 0.0:
         verdict = None
         confidence = 0.0
+        agreement = 0
     else:
         verdict = top_name
         # Confidence = top score / (top + second), clipped to [0,1]; if no runner-up, use 1.
         denom = top_score + max(second_score, 0.0)
         confidence = float(top_score / denom) if denom > 0 else 0.0
-        # Bias upward when many independent evidence pieces favour the verdict
-        confidence = min(1.0, confidence + 0.1 * sum(
-            1 for ev in evidence if verdict in ev.favors))
+        # Bias upward when many independent evidence pieces favour the verdict.
+        agreement = sum(1 for ev in evidence if verdict in ev.favors)
+        confidence = min(1.0, confidence + 0.1 * agreement)
+
+    # Qualitative band (primary signal) + conflict detection. The numeric
+    # confidence and the verdict are NOT changed by this; a contradiction only
+    # demotes the band one step.
+    band = scoring.confidence_band(confidence)
+    conflicts = scoring.detect_conflicts(evidence, verdict, scores)
+    band = scoring.band_after_conflicts(band, conflicts)
+    caveats = scoring.caveats_for_techniques(spectra_techniques)
 
     trace = _build_trace(evidence, scores)
+    # Surface each conflict as a trailing trace step (step numbering continues).
+    for c in conflicts:
+        trace.append(TraceStep(
+            step=len(trace) + 1,
+            technique=c.technique,
+            finding=c.detail,
+            implication="conflict — band downgraded / corroboration advised"
+            if c.kind == "rules_out_verdict" else "conflict — corroboration advised",
+        ))
     follow_ups = _follow_ups(spectra_techniques, top_score, second_score)
+    if conflicts:
+        follow_ups.append(
+            f"Evidence conflict detected ({len(conflicts)}); corroborate the verdict "
+            "with an additional technique before relying on it."
+        )
 
-    return DiagnosticReport(
+    report = DiagnosticReport(
         verdict=verdict,
         confidence=confidence,
         candidate_scores={k: float(v) for k, v in scores.items()},
         evidence=evidence,
         reasoning_trace=trace,
         follow_up_recommendations=follow_ups,
+        conflicts=conflicts,
+        confidence_band=band,
+        evidence_agreement=agreement,
+        caveats=caveats,
     )
+    if calibrated and verdict is not None:
+        from checkmsg import calibrate
+        method = "platt" if calibrated is True else str(calibrated)
+        cal = calibrate.load_calibrator(method)
+        if cal is not None:
+            report.calibrated_confidence = round(cal.predict_proba(report), 4)
+            report.calibration_method = method
+    return report
+
+
+def diagnose_calibrated(spectra, *, method: str = "platt", **kwargs) -> DiagnosticReport:
+    """Convenience wrapper: ``diagnose(..., calibrated=method)``."""
+    return diagnose(spectra, calibrated=method, **kwargs)
 
 
 def diagnose_profile(profile: MineralProfile, *,
@@ -522,4 +869,20 @@ def diagnose_profile(profile: MineralProfile, *,
         squid_meas = minerals.synthesize_squid_mh(profile, seed=seed)
         if squid_meas is not None:
             spectra.append(squid_mod.to_spectrum(squid_meas))
+    if profile.pl_centers:
+        sp = minerals.synthesize_pl(profile, seed=seed)
+        if sp is not None:
+            spectra.append(sp)
+    if profile.ftir_bands or profile.diamond_type:
+        sp = minerals.synthesize_ftir(profile, seed=seed)
+        if sp is not None:
+            spectra.append(sp)
+    if profile.mossbauer_sites:
+        sp = minerals.synthesize_mossbauer(profile, seed=seed)
+        if sp is not None:
+            spectra.append(sp)
+    if profile.cl_bands:
+        sp = minerals.synthesize_cl(profile, seed=seed)
+        if sp is not None:
+            spectra.append(sp)
     return diagnose(spectra, frequency_GHz=epr_frequency_GHz)

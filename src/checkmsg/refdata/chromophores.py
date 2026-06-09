@@ -91,6 +91,27 @@ CHROMOPHORES: tuple[Chromophore, ...] = (
         typical_in=("moissanite",),
         notes="6H-SiC band-gap edge near 3.0 eV.",
     ),
+    Chromophore(
+        name="Cu2+ d-d (malachite/turquoise)",
+        bands_nm=(700, 780),
+        tolerance_nm=40,
+        typical_in=("malachite", "azurite", "turquoise"),
+        notes="Cu2+ d-d absorption giving green/blue in copper oxysalts and phosphates.",
+    ),
+    Chromophore(
+        name="Mn3+ d-d (kunzite)",
+        bands_nm=(545,),
+        tolerance_nm=25,
+        typical_in=("kunzite", "sugilite"),
+        notes="Jahn-Teller-distorted Mn3+ d-d band giving pink/violet (spodumene, sugilite).",
+    ),
+    Chromophore(
+        name="S3- radical (lapis/lazurite)",
+        bands_nm=(600,),
+        tolerance_nm=30,
+        typical_in=("lapis_lazuli",),
+        notes="S3- polysulphide radical anion — the blue of lazurite/ultramarine.",
+    ),
 )
 
 

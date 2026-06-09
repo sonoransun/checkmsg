@@ -81,6 +81,14 @@ CENTERS: dict[str, SpinSystem] = {
         D_MHz=12050.0, E_MHz=0.0,
         linewidth_mT=1.0, host="corundum",
     ),
+
+    # --- Beryl (emerald / morganite host) ---
+    "beryl_Cr3plus": SpinSystem(
+        name="Cr3+ in beryl (emerald color-center)",
+        S=1.5, g=(1.973, 1.973, 1.973),
+        D_MHz=1560.0, E_MHz=0.0,
+        linewidth_mT=0.8, host="beryl",
+    ),
 }
 
 

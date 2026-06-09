@@ -1,6 +1,6 @@
-# Seven analytical techniques
+# Eleven analytical techniques
 
-Every technique answers a different question about a sample. This page summarises the physics, the bundled reference data, and the analyzer entry points for each of the seven techniques `checkmsg` supports.
+Every technique answers a different question about a sample. This page summarises the physics, the bundled reference data, and the analyzer entry points for each of the eleven techniques `checkmsg` supports (the original seven plus the modern-lab additions PL, FTIR, Mössbauer, and CL).
 
 | Technique | Question answered | Module | Units |
 |---|---|---|---|
@@ -11,6 +11,10 @@ Every technique answers a different question about a sample. This page summarise
 | EPR | Are there unpaired electrons? Where? | `epr.py` | mT |
 | LA-ICP-MS | What concentrations and isotope ratios? | `laicpms.py` | m/z |
 | SQUID | What is the bulk magnetic ordering and moment? | `squid.py` | mT (M-H) / K (χ-T) / Hz (χ-ac) |
+| PL | Which diamond defect centres are present (natural vs HPHT vs CVD)? | `pl.py` | nm |
+| FTIR | What is the diamond N-aggregation type / is there water or polymer? | `ftir.py` | cm⁻¹ |
+| Mössbauer | What is the Fe oxidation state and site geometry? | `mossbauer.py` | mm/s |
+| CL | Which luminescent activator centres / growth zoning are present? | `cl.py` | nm |
 
 The analyzers share a common shape: each accepts a `Spectrum`, calls technique-appropriate preprocessing, detects features, matches against bundled reference data, and returns a structured result.
 
@@ -398,3 +402,86 @@ Three forward simulators capture the relevant physics:
 ![SQUID magnetic minerals](figures/examples/21_squid_magnetic_minerals.png)
 
 Five scenarios in one script: dc-SQUID hysteresis carousel (magnetite vs hematite vs ilmenite vs diamond), rf-SQUID χ(T) Curie-Weiss fit on magnetite (Tc=858 K), AC χ_ac on a superparamagnetic FeCoNi cluster (HPHT-catalyst proxy), pearl freshwater-vs-saltwater AC screening (~22× χ′ contrast at 1 Hz), and a unified `diagnose()` integration where SQUID + Raman jointly identify magnetite.
+
+---
+
+## Photoluminescence (PL)
+
+![PL schematic](figures/pl_schematic.png)
+
+Photoluminescence excites a sample with a laser and records the sharp **zero-phonon lines (ZPLs)** emitted as electrons relax through optically active point defects. Unlike Raman — which fingerprints the host lattice — PL fingerprints the *defects*, and defect populations are exactly what synthesis and treatment alter. PL is therefore the modern frontier for *is this diamond natural, HPHT-synthetic, or CVD-synthetic?* The nitrogen-vacancy pair (NV⁰ 575 nm, NV⁻ 637 nm) is strong in synthetics, and the silicon-vacancy centre (Si-V⁻ ≈737 nm) is a near-definitive CVD-growth marker. The toolkit matches detected lines against a tabulated ZPL catalogue; it does not model phonon sidebands or temperature/strain shifts.
+
+**Bundled data**: seven diamond defect ZPLs in `refdata/pl_lines.py` — N3 (415.2), H4 (496), H3 (503.2), 3H (503.5), NV⁰ (575), NV⁻ (637), Si-V⁻ (736.6). The `SYNTHETIC_MARKER_NM` tuple flags Si-V so `PlResult.has_synthetic_marker()` can raise a synthetic warning. Sources: Zaitsev 2001; Davies 1977; Clark et al. 1995; Wang et al. 2012.
+
+```python
+from checkmsg import pl
+result = pl.analyze(spec)
+result.best.name                # 'NV-', 'SiV-', 'N3 (cape series)', ...
+result.has_synthetic_marker()   # True when the ~737 nm Si-V line is present
+```
+
+**Caveat**: matches discrete ZPL positions only; no phonon-sideband shapes, Debye-Waller temperature dependence, or absolute concentration calibration. A confident natural-vs-synthetic verdict fuses PL with FTIR type and fluorescence imaging.
+
+---
+
+## Fourier-transform infrared spectroscopy (FTIR)
+
+![FTIR schematic](figures/ftir_schematic.png)
+
+FTIR measures mid-infrared absorption by interfering a broadband IR beam against itself in a Michelson interferometer and Fourier-transforming the interferogram. It answers two questions no other bundled technique can: the **diamond nitrogen-aggregation type** (Ia/Ib/IIa/IIb), constraining growth and annealing history, and the presence of **structural water/OH** (beryl) or **polymer impregnation** (jadeite) that flags treatment. Type Ib gives 1130 + 1344 cm⁻¹ (single N); Type Ia gives 1282 + 1175 + 1370 cm⁻¹ (aggregated N + platelets); Type IIa shows no nitrogen band; Type IIb shows the boron continuum near 2800 cm⁻¹.
+
+**Bundled data**: six band multiplets in `refdata/ftir_bands.py` plus a `DIAMOND_TYPE_BANDS` lookup. Sources: Field 1992; Zaitsev 2001; Woods et al. 1990; Collins & Williams 1971; Wood & Nassau 1968; Fritsch et al. 1992; Farmer 1974.
+
+```python
+from checkmsg import ftir
+result = ftir.analyze(spec, polarity="absorbance")   # or "transmittance"
+result.diamond_type             # 'Ia', 'Ib', 'IIb', or '' (IIa = no N/B bands)
+result.has_polymer()            # True for B-jade epoxy impregnation
+```
+
+**Caveat**: matches band centres with a strict all-bands-present rule; no one-phonon deconvolution or nitrogen-concentration quantification.
+
+---
+
+## ⁵⁷Fe Mössbauer spectroscopy
+
+![Mössbauer schematic](figures/mossbauer_schematic.png)
+
+Mössbauer spectroscopy exploits recoil-free resonant absorption of 14.4 keV γ-rays by ⁵⁷Fe nuclei to read iron's local environment. For gems it answers: *what is the iron oxidation state (Fe²⁺ vs Fe³⁺) and what site does it occupy?* The source is Doppler-tuned, so the energy axis is a **velocity in mm/s**. Paramagnetic Fe gives a quadrupole **doublet** (split by ΔEQ, centred on isomer shift δ); a magnetically ordered oxide gives a six-line **sextet**. Fe³⁺ has small δ (≈0.3–0.4) and Fe²⁺ large δ (≈1.0–1.3), so δ alone discriminates valence.
+
+**Bundled data**: nine `FeSite` records in `refdata/mossbauer_sites.py` (corundum, almandine, andradite, beryl Fe²⁺/Fe³⁺, tourmaline, olivine, plus hematite/magnetite sextets). Sources: Amthauer et al. 1976; Goldman et al. 1978; Burns 1993; Dunlop & Özdemir 1997.
+
+```python
+from checkmsg import mossbauer
+result = mossbauer.analyze(spec)
+result.extracted["valence"]     # 'Fe2+', 'Fe3+', or 'Fe(mixed)'
+result.best.name                # 'almandine_Fe2plus', 'corundum_Fe3plus', ...
+```
+
+Unlike PL/FTIR/CL, Mössbauer is **not** built on the shared `line_bands` matcher — its observable is a (δ, ΔEQ) doublet scored by squid-style residuals, kept `Spectrum`-native (the velocity axis is single-valued).
+
+**Caveat**: no thickness/saturation, texture, or recoil-free-fraction correction; magnetite's two sublattices are a single mean sextet. Qualitative valence-and-site ID, not quantitative Fe²⁺/Fe³⁺ ratios.
+
+---
+
+## Cathodoluminescence (CL)
+
+![CL schematic](figures/cl_schematic.png)
+
+Cathodoluminescence bombards a sample with an electron beam and records the light emitted as electron-hole pairs recombine through luminescent activators (diamond band-A, Cr³⁺ in corundum, Mn²⁺ in carbonates, REE³⁺ in zircon). In **imaging** mode the spatial zoning pattern separates natural from HPHT from CVD diamond; the bundled module models only the 1-D emission spectrum and surfaces zoning as descriptive notes.
+
+**Bundled data**: four activator band sets in `refdata/cl_bands.py` — diamond band-A (440), zircon REE³⁺ (480 + 575), Mn²⁺ carbonate (610), Cr³⁺ corundum (694). Sources: Marshall 1988; Gaft et al. 2005; Dean 1965; Nasdala et al. 2003.
+
+```python
+from checkmsg import cl
+result = cl.analyze(spec)
+result.best.name                # 'diamond band-A', 'Cr3+ corundum red', ...
+```
+
+**Caveat**: matches 1-D emission-band maxima only; the growth-zoning pattern that actually separates natural/HPHT/CVD diamond requires imaging the `Spectrum` primitive cannot represent.
+
+### Worked output — `examples/22_modern_lab_techniques.py`
+
+![Modern lab techniques](figures/examples/22_modern_lab_techniques.png)
+
+One script exercising all four: a CVD diamond's Si-V PL synthetic-marker, a natural diamond's Type Ia FTIR classification, Fe²⁺ (almandine) vs Fe³⁺ (sapphire) Mössbauer doublets, and ruby's Cr³⁺ CL R-line — then a unified `diagnose()` separating natural / CVD / HPHT diamond.

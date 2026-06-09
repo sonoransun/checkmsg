@@ -33,6 +33,8 @@ SCRIPTS = [
     "19_unknown_stone_capstone.py",
     "20_muon_tomography.py",
     "21_squid_magnetic_minerals.py",
+    "22_modern_lab_techniques.py",
+    "23_expanded_gem_groups.py",
 ]
 
 

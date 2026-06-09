@@ -1,6 +1,6 @@
 # Check M.S.G.
 
-> A Python toolkit for the **m**inerals, **s**tones, **g**ems and other condensed-matter accretions that show up at the gemological lab bench. Seven analytical techniques (Raman, XRF, LIBS, UV-VIS, EPR, LA-ICP-MS, SQUID magnetometry — both dc-SQUID and rf-SQUID), a 55-entry mineral catalog, and a unified diagnostic pipeline that produces auditable identification reports — with a 21-step curriculum that teaches the workflow from "diamond vs simulants" through to a capstone integrated diagnosis.
+> A Python toolkit for the **m**inerals, **s**tones, **g**ems and other condensed-matter accretions that show up at the gemological lab bench. Eleven analytical techniques (Raman, XRF, LIBS, UV-VIS, EPR, LA-ICP-MS, SQUID magnetometry, photoluminescence, FTIR, ⁵⁷Fe Mössbauer, cathodoluminescence), a 96-entry mineral catalog, and a unified diagnostic pipeline that produces auditable identification reports (with an opt-in calibrated-confidence path and a spectral-embedding similarity search) — with a 23-step curriculum that teaches the workflow from "diamond vs simulants" through to a capstone integrated diagnosis.
 
 ![Capstone analysis](docs/figures/examples/19_unknown_stone_capstone.png)
 *An unknown green stone, identified as tsavorite via the unified `diagnose()` pipeline using four techniques (Raman + UV-VIS + XRF + LIBS).*
@@ -31,7 +31,7 @@ flowchart TB
         A6["laicpms.analyze"]
         A7["squid.analyze (dc/rf)"]
     end
-    Catalog[("MineralProfile<br/>CATALOG (55 entries)")]
+    Catalog[("MineralProfile<br/>CATALOG (96 entries)")]
     Diagnose["diagnose.diagnose"]
     Report[["DiagnosticReport<br/>verdict + reasoning trace"]]
     S1 --> A1
@@ -94,7 +94,7 @@ Each technique has a dedicated docs page at [`docs/techniques.md`](docs/techniqu
 
 ## Curriculum showcase
 
-Twenty-one runnable example scripts under `examples/` — single-technique discriminations through a capstone integrated diagnosis, plus experimental muon-tomography and SQUID-magnetometry modes. Pick a tile to dive in.
+Twenty-three runnable example scripts under `examples/` — single-technique discriminations through a capstone integrated diagnosis, plus experimental muon-tomography and SQUID-magnetometry modes. Pick a tile to dive in.
 
 | ![](docs/figures/examples/01_diamond_vs_moissanite_vs_cz.png) | ![](docs/figures/examples/04_sapphire_origin.png) | ![](docs/figures/examples/05_multi_laser_temperature.png) |
 |---|---|---|
@@ -103,8 +103,10 @@ Twenty-one runnable example scripts under `examples/` — single-technique discr
 | **06** EPR unpaired-electron centres | **07** LA-ICP-MS for ambiguous cases | **08** Diamond simulant carousel |
 | ![](docs/figures/examples/09_blue_stone_disambiguation.png) | ![](docs/figures/examples/13_red_gems_carousel.png) | ![](docs/figures/examples/19_unknown_stone_capstone.png) |
 | **09** Blue stones disambiguated | **13** Red gems beyond ruby | **19** Capstone integrated diagnosis |
-| ![](docs/figures/examples/20_muon_tomography.png) | ![](docs/figures/examples/21_squid_magnetic_minerals.png) |  |
-| **20** Muon tomography (experimental) | **21** SQUID magnetometry (dc + rf) |  |
+| ![](docs/figures/examples/20_muon_tomography.png) | ![](docs/figures/examples/21_squid_magnetic_minerals.png) | ![](docs/figures/examples/22_modern_lab_techniques.png) |
+| **20** Muon tomography (experimental) | **21** SQUID magnetometry (dc + rf) | **22** Modern lab techniques (PL/FTIR/Mössbauer/CL) |
+| ![](docs/figures/examples/23_expanded_gem_groups.png) |  |  |
+| **23** Expanded gem-group carousels |  |  |
 
 Full per-example walkthroughs in [`docs/curriculum.md`](docs/curriculum.md).
 
@@ -114,7 +116,8 @@ Full per-example walkthroughs in [`docs/curriculum.md`](docs/curriculum.md).
 - [`docs/techniques.md`](docs/techniques.md) — per-technique schematics + sequence diagrams + worked outputs.
 - [`docs/catalog.md`](docs/catalog.md) — mineral catalog reference + auto-generated confusables graph.
 - [`docs/diagnose.md`](docs/diagnose.md) — diagnostic pipeline algorithm, scoring rules, worked example.
-- [`docs/curriculum.md`](docs/curriculum.md) — 21 example walkthroughs.
+- [`docs/accuracy.md`](docs/accuracy.md) — per-module accuracy tiers, provenance, scoring-weight rationale, and how to read the confidence band.
+- [`docs/curriculum.md`](docs/curriculum.md) — 23 example walkthroughs.
 
 ## Reference data sources
 
@@ -138,5 +141,7 @@ Citations for every individual catalog entry live in `src/checkmsg/minerals.py` 
 ## Disclaimer
 
 The example scripts and tests use **synthetic spectra** generated for didactic purposes. Real instrument data — with drift, polyatomic interferences, matrix-induced sensitivity changes, and physical inclusions — will degrade `diagnose()` accuracy. This toolkit is **not certified** for commercial gemological identification.
+
+The reported confidence is a *separation ratio*, **not** a probability that the verdict is correct. See [`docs/accuracy.md`](docs/accuracy.md) for per-module accuracy tiers and the standing disclaimer that every diagnosis surfaces.
 
 ---

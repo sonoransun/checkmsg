@@ -106,6 +106,10 @@ After all evidence is collected, the pipeline:
 1. Ranks every catalog entry by total score.
 2. Selects the top candidate as the verdict (or `None` if the top score is ≤ 0).
 3. Computes confidence as `top / (top + second)`, then bumps it by 0.1 per favoring evidence item, clipped to 1.0.
+4. Maps that float to a qualitative `confidence_band` (`high`/`medium`/`low`/`inconclusive`) via `scoring.confidence_band` — **the band is the primary user-facing signal; the float is a separation ratio, not a probability.**
+5. Runs `scoring.detect_conflicts`; a direct contradiction (`rules_out_verdict`) demotes the band one step (never the float or the verdict).
+
+The scoring weights now live in `checkmsg.scoring.WEIGHTS` (one rationale-annotated entry per weight) rather than as inline literals. See [`accuracy.md`](accuracy.md) for the weight rationale, per-module accuracy tiers, and how to read confidence.
 
 Two candidates that tie on score produce a low-margin warning in the follow-up recommendations.
 

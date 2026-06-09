@@ -1,0 +1,32 @@
+{
+  "feature_names": [
+    "separation_ratio",
+    "margin",
+    "top_score",
+    "agreement",
+    "n_techniques",
+    "n_evidence",
+    "verdict_favor_sum",
+    "has_conflict"
+  ],
+  "metadata": {
+    "brier": 0.1038,
+    "catalog_size": 96,
+    "ece": 0.1102,
+    "limits": "Calibrated on noise-clean synthetic leave-mineral-out self-diagnosis; not a real-world probability of correctness.",
+    "n_oof": 288,
+    "n_samples": 288,
+    "seeds": [
+      0,
+      1,
+      2
+    ]
+  },
+  "method": "platt",
+  "params": {
+    "A": 15.26851437340479,
+    "B": -12.240548441683236,
+    "feature": "separation_ratio"
+  },
+  "schema_version": 1
+}

@@ -496,6 +496,44 @@ print(result.best.name)                       # 'magnetite'
 
 ---
 
+## 22 — Modern lab techniques (PL / FTIR / Mössbauer / CL)
+
+The four techniques real cutting-edge gem labs reach for, on synthetic spectra from the catalog synthesizers. Photoluminescence reads sharp defect zero-phonon lines (the Si-V centre at ~737 nm is the near-definitive CVD-synthetic-diamond marker); FTIR classifies diamond nitrogen-aggregation type (Ia/Ib/IIa/IIb) and flags beryl water / jade polymer; ⁵⁷Fe Mössbauer separates Fe²⁺ from Fe³⁺ by isomer shift; and cathodoluminescence reads activator bands (Cr³⁺, Mn²⁺, band-A). The capstone scenario feeds all four through `diagnose()` to separate **natural vs CVD vs HPHT diamond** — where Raman alone is useless (all three sit at 1332.5 cm⁻¹).
+
+```python
+from checkmsg import pl, ftir, mossbauer, minerals
+from checkmsg.diagnose import diagnose_profile
+
+pl.analyze(minerals.synthesize_pl(minerals.get("diamond_cvd"))).has_synthetic_marker()  # True (Si-V)
+ftir.analyze(minerals.synthesize_ftir(minerals.get("diamond"))).diamond_type             # 'Ia'
+mossbauer.analyze(minerals.synthesize_mossbauer(minerals.get("almandine"))).extracted["valence"]  # 'Fe2+'
+
+for d in ("diamond", "diamond_cvd", "diamond_hpht"):
+    print(d, "->", diagnose_profile(minerals.get(d)).verdict)   # three distinct verdicts
+```
+
+**Expected output**: a four-panel figure (PL emission, FTIR absorption, Mössbauer doublet, CL emission) and the natural/CVD/HPHT verdict table.
+
+**Follow-on**: HPHT-synthetic diamond self-identifies here via its Ni-related EPR centre **and** a ferromagnetic Fe-Ni-Co flux-inclusion SQUID moment, while CVD shows neither but carries Si-V in PL. Which single technique, on its own, would *fail* to separate all three?
+
+---
+
+## 23 — Expanded gem-group carousels
+
+Four `diagnose()` carousels over the gem families added in the catalogue expansion (feldspar, copper minerals, beryl varieties, accessory/borosilicate gems). The beryl carousel deliberately lowers its correct-threshold: colourless **goshenite** cannot be separated from other beryls by Raman + XRF alone (it has no chromophore), so it resolves to a sibling — the honest pedagogical point that some identifications genuinely require more data.
+
+```python
+from examples._common import run_carousel
+run_carousel("feldspar", ["orthoclase", "labradorite", "amazonite", "sunstone"], require_correct=3)
+run_carousel("copper",   ["malachite", "azurite", "turquoise", "chrysocolla"], require_correct=3)
+```
+
+**Expected output**: per-carousel verdict tables with accuracy counts, plus a stacked-Raman figure of the beryl varieties.
+
+**Follow-on**: The copper carbonates (malachite, azurite) and copper phosphate (turquoise) all share the Cu²⁺ chromophore — what carries the discrimination? (Hint: carbonate vs phosphate Raman ν1, and Cu/P vs Cu-only XRF chemistry.)
+
+---
+
 ## Where next?
 
 - For the architectural overview, see [`architecture.md`](architecture.md).

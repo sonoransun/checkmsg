@@ -167,6 +167,31 @@ SIGNATURES: dict[str, MagneticMineral] = {
               "High-spin like Mn2+ but on different site geometries.",
         references=("Burns 1993",),
     ),
+    "Cu2plus_paramagnet": MagneticMineral(
+        name="Cu2plus_paramagnet",
+        ordering="paramagnetic",
+        weiss_K=-5.0,
+        susceptibility_si=(1.0e-5, 2.0e-4),
+        notes="Cu2+ (S=1/2, d9) in malachite/azurite/turquoise. AFM superexchange "
+              "between adjacent Cu gives a small negative Weiss constant.",
+        references=("Burns 1993", "Dunlop & Özdemir 1997"),
+    ),
+    "Gd3plus_paramagnet": MagneticMineral(
+        name="Gd3plus_paramagnet",
+        ordering="paramagnetic",
+        weiss_K=-1.0,
+        susceptibility_si=(5.0e-3, 2.0e-2),
+        notes="Gd3+ (S=7/2, half-filled 4f) in GGG — large paramagnetic moment.",
+        references=("Brixner 1964",),
+    ),
+    "Mn3plus_paramagnet": MagneticMineral(
+        name="Mn3plus_paramagnet",
+        ordering="paramagnetic",
+        weiss_K=-2.0,
+        susceptibility_si=(1.0e-6, 8.0e-5),
+        notes="Mn3+ (S=2, Jahn-Teller) in kunzite/sugilite.",
+        references=("Burns 1993",),
+    ),
 
     # ---------- Diamagnetic baselines ----------
     "diamond_diamagnetic": MagneticMineral(

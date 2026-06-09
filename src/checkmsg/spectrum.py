@@ -6,7 +6,8 @@ from typing import Literal
 import numpy as np
 
 Technique = Literal[
-    "raman", "xrf", "libs", "uvvis", "epr", "laicpms", "muon-xray", "squid-mh", "squid-chi"
+    "raman", "xrf", "libs", "uvvis", "epr", "laicpms", "muon-xray", "squid-mh", "squid-chi",
+    "pl", "ftir", "mossbauer", "cl",
 ]
 
 

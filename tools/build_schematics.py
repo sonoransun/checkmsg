@@ -278,6 +278,95 @@ def draw_squid(ax):
     )
 
 
+def draw_pl(ax):
+    _setup_ax(ax, "Photoluminescence — defect emission lines")
+    _box(ax, 0.3, 2.3, 1.7, 1.0, "532 nm\nlaser", fill=GREEN)
+    _box(ax, 4.0, 2.3, 1.6, 1.0, "diamond\nsample", fill=GREY)
+    _box(ax, 7.6, 2.3, 2.0, 1.0, "spectrometer\n+ detector", fill=NAVY)
+    _arrow(ax, 2.0, 2.8, 4.0, 2.8, color=GREEN, label="excitation")
+    _arrow(ax, 5.6, 2.8, 7.6, 2.8, color=ORANGE, label="emission")
+    ax.plot([2.5, 3.7], [4.4, 4.4], color=GREY, lw=1.2)
+    ax.plot([2.5, 3.7], [5.3, 5.3], color=GREY, lw=1.2, linestyle="--")
+    ax.text(2.3, 4.4, "ground", fontsize=8, ha="right", va="center", color=GREY)
+    ax.text(2.3, 5.3, "excited", fontsize=8, ha="right", va="center", color=GREY)
+    _arrow(ax, 2.9, 4.4, 2.9, 5.3, color=GREEN)
+    _arrow(ax, 3.4, 5.3, 3.4, 4.4, color=ORANGE)
+    ax.plot([6.0, 9.5], [4.5, 4.5], color=GREY, lw=1.0)
+    ax.plot([6.6, 6.6], [4.5, 5.4], color=ORANGE, lw=1.6)
+    ax.plot([7.5, 7.5], [4.5, 5.0], color=ORANGE, lw=1.6)
+    ax.text(6.6, 5.5, "NV⁻\n637", fontsize=8, ha="center", va="bottom", color=ORANGE)
+    ax.text(7.5, 5.1, "SiV⁻\n737", fontsize=8, ha="center", va="bottom", color=ORANGE)
+    ax.text(9.5, 4.3, "λ (nm)", fontsize=8, ha="right", color=GREY)
+    ax.text(5.0, 0.7, "→ sharp zero-phonon lines fingerprint colour centres",
+            fontsize=10, color=NAVY, weight="bold", ha="center", va="center")
+
+
+def draw_ftir(ax):
+    _setup_ax(ax, "FTIR — infrared absorption via interferometry")
+    _box(ax, 0.1, 2.3, 1.4, 1.0, "IR source\n(globar)", fill=GREEN)
+    _box(ax, 2.0, 2.3, 1.9, 1.0, "interferometer\n(moving mirror)", fill=NAVY)
+    _box(ax, 4.4, 2.3, 1.5, 1.0, "sample", fill=GREY)
+    _box(ax, 6.5, 2.3, 1.7, 1.0, "DTGS\ndetector", fill=NAVY)
+    _arrow(ax, 1.5, 2.8, 2.0, 2.8, color=GREEN, label="IR")
+    _arrow(ax, 3.9, 2.8, 4.4, 2.8, color=GREEN, label="modulated")
+    _arrow(ax, 5.9, 2.8, 6.5, 2.8, color=ORANGE, label="transmitted")
+    ax.add_patch(patches.Rectangle((2.85, 1.45), 0.25, 0.6, color=ORANGE))
+    _arrow(ax, 3.25, 1.75, 3.65, 1.75, color=ORANGE)
+    ax.text(2.95, 1.2, "Δx", fontsize=8, ha="center", color=ORANGE)
+    wn = np.linspace(0, 6, 200)
+    spec = (0.7 * np.exp(-((wn - 1.5) ** 2) / 0.1)
+            + 0.9 * np.exp(-((wn - 4.0) ** 2) / 0.15))
+    ax.plot(1.5 + wn * 0.7, 5.3 - spec * 0.7, color=ORANGE, lw=1.4)
+    ax.text(1.55, 4.4, "Ia 1282", fontsize=8, color=ORANGE, ha="center")
+    ax.text(4.3, 4.4, "OH ~3600", fontsize=8, color=ORANGE, ha="center")
+    ax.text(1.2, 4.9, "abs", fontsize=8, color=GREY, rotation=90, va="center")
+    ax.text(5.5, 4.6, "cm⁻¹", fontsize=8, color=GREY)
+    ax.text(5.0, 0.7, "→ FT of the interferogram gives the IR absorption spectrum",
+            fontsize=10, color=NAVY, weight="bold", ha="center", va="center")
+
+
+def draw_mossbauer(ax):
+    _setup_ax(ax, "Mössbauer — recoilless γ-resonance on ⁵⁷Fe")
+    _box(ax, 0.1, 2.3, 1.8, 1.0, "⁵⁷Co γ-source\non velocity\ndrive", fill=GREEN)
+    _box(ax, 4.0, 2.3, 1.6, 1.0, "sample\n(⁵⁷Fe)", fill=GREY)
+    _box(ax, 7.6, 2.3, 2.0, 1.0, "proportional\ncounter", fill=NAVY)
+    _arrow(ax, 1.9, 2.8, 4.0, 2.8, color=GREEN, label="14.4 keV γ")
+    _arrow(ax, 5.6, 2.8, 7.6, 2.8, color=ORANGE, label="transmitted γ")
+    _arrow(ax, 0.5, 1.7, 1.5, 1.7, color=ORANGE)
+    ax.text(1.0, 1.35, "±v (mm/s)", fontsize=8, ha="center", color=ORANGE)
+    v = np.linspace(0, 6, 200)
+    spec = (0.8 * np.exp(-((v - 2.2) ** 2) / 0.08)
+            + 0.8 * np.exp(-((v - 3.8) ** 2) / 0.08))
+    ax.plot(1.5 + v * 0.7, 5.3 - spec * 0.7, color=ORANGE, lw=1.4)
+    ax.text(3.0, 5.4, "quadrupole doublet", fontsize=9, ha="center", color=NAVY, weight="bold")
+    ax.text(2.6, 4.5, "ΔE_Q", fontsize=8, color=ORANGE, ha="center")
+    ax.text(5.5, 4.6, "v", fontsize=8, color=GREY)
+    ax.text(5.0, 1.05, "(magnetic oxides → 6-line Zeeman sextet)",
+            fontsize=8.5, color=GREY, style="italic", ha="center", va="center")
+    ax.text(5.0, 0.5, "→ isomer shift + quadrupole splitting → Fe valence & site",
+            fontsize=10, color=NAVY, weight="bold", ha="center", va="center")
+
+
+def draw_cl(ax):
+    _setup_ax(ax, "Cathodoluminescence — electron-beam-excited emission")
+    _box(ax, 0.3, 2.3, 1.7, 1.0, "electron gun\n(keV e-beam)", fill=GREEN)
+    _box(ax, 4.0, 2.3, 1.6, 1.0, "sample\nunder e-beam", fill=GREY)
+    _box(ax, 7.6, 2.3, 2.0, 1.0, "spectrometer\n+ detector", fill=NAVY)
+    _arrow(ax, 2.0, 2.8, 4.0, 2.8, color=GREEN, label="e⁻ beam")
+    _arrow(ax, 5.6, 2.8, 7.6, 2.8, color=ORANGE, label="luminescence")
+    wl = np.linspace(0, 6, 200)
+    spec = np.exp(-((wl - 2.0) ** 2) / 0.8)
+    ax.plot(1.5 + wl * 0.7, 4.5 + spec * 0.7, color=ORANGE, lw=1.4)
+    ax.text(2.9, 5.5, "band-A ~440 nm", fontsize=9, ha="center", color=ORANGE)
+    ax.text(1.2, 4.9, "CL", fontsize=8, color=GREY, rotation=90, va="center")
+    ax.text(5.5, 4.4, "λ (nm)", fontsize=8, color=GREY)
+    for dx in (0.25, 0.55, 0.85, 1.15):
+        ax.plot([4.0 + dx, 4.0 + dx], [2.35, 3.25], color=NAVY, lw=0.8, alpha=0.5)
+    ax.text(4.8, 2.05, "growth zoning", fontsize=8, ha="center", color=NAVY, style="italic")
+    ax.text(5.0, 0.7, "→ band-A intensity + zoning reveals growth history",
+            fontsize=10, color=NAVY, weight="bold", ha="center", va="center")
+
+
 SCHEMATIC_BUILDERS = {
     "raman": draw_raman,
     "xrf": draw_xrf,
@@ -287,6 +376,10 @@ SCHEMATIC_BUILDERS = {
     "laicpms": draw_laicpms,
     "muon": draw_muon,
     "squid": draw_squid,  # routed via build_one's 2-panel branch
+    "pl": draw_pl,
+    "ftir": draw_ftir,
+    "mossbauer": draw_mossbauer,
+    "cl": draw_cl,
 }
 
 

@@ -69,6 +69,21 @@ def fit_voigt(spectrum: Spectrum, around: float, window: float) -> Peak | None:
     return Peak(position=center, height=height, width=float(fwhm), snr=float(height / max(noise, 1e-12)))
 
 
+def prominent(peaks: list[Peak], frac: float = 0.2) -> list[Peak]:
+    """Keep only peaks at least ``frac`` of the tallest peak's height.
+
+    Guards line/band matchers against the many low-amplitude noise peaks that
+    finely-sampled spectra produce (where Savitzky-Golay smoothing covers too
+    narrow a window to suppress them); the diagnostic features dominate by height.
+    """
+    if not peaks:
+        return []
+    hmax = max(p.height for p in peaks)
+    if hmax <= 0:
+        return peaks
+    return [p for p in peaks if p.height >= frac * hmax]
+
+
 def _estimate_noise(y: np.ndarray) -> float:
     """Robust noise estimate via MAD of first differences."""
     d = np.diff(np.asarray(y, dtype=float))

@@ -24,7 +24,7 @@ flowchart TB
         A6["laicpms.analyze"]
         A7["squid.analyze (dc/rf)"]
     end
-    Catalog[("MineralProfile<br/>CATALOG (55 entries)")]
+    Catalog[("MineralProfile<br/>CATALOG (96 entries)")]
     Diagnose["diagnose.diagnose"]
     Report[["DiagnosticReport<br/>verdict + reasoning trace"]]
     S1 --> A1
@@ -150,7 +150,7 @@ checkmsg/
 │   ├── squid.py               # SQUID magnetometry: dc-mh hysteresis, rf χ(T) + AC χ_ac
 │   ├── identify.py            # combined_report multi-technique fusion
 │   ├── diagnose.py            # unified diagnostic pipeline + reasoning trace
-│   ├── minerals.py            # MineralProfile catalog (55 entries) + helpers
+│   ├── minerals.py            # MineralProfile catalog (96 entries) + helpers
 │   ├── laser.py               # 8-laser catalogue (Raman excitation)
 │   ├── microwave.py           # 7-band catalogue (EPR frequencies)
 │   ├── temperature.py         # LN2 / room phonon physics

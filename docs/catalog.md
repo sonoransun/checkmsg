@@ -1,12 +1,12 @@
 # Mineral catalog reference
 
-`src/checkmsg/minerals.py` ships a catalog of 55 gemstones across 10 thematic groups. Every entry is a `MineralProfile` carrying chemical, physical, and spectroscopic fingerprints — enough to drive both the synthesis helpers and the diagnostic pipeline.
+`src/checkmsg/minerals.py` ships a catalog of 96 gemstones across thematic groups. Every entry is a `MineralProfile` carrying chemical, physical, and spectroscopic fingerprints — enough to drive both the synthesis helpers and the diagnostic pipeline.
 
 ## Catalog structure
 
 ```mermaid
 mindmap
-  root((CATALOG<br/>55 entries))
+  root((CATALOG<br/>96 entries))
     Diamond simulants
       diamond
       moissanite
@@ -105,6 +105,11 @@ graph LR
     diamond --- moissanite
     cubic_zirconia --- diamond
     diamond --- white_sapphire
+    diamond --- diamond_cvd
+    diamond_cvd --- diamond_hpht
+    diamond_cvd --- moissanite
+    diamond --- diamond_hpht
+    diamond_hpht --- moissanite
     cubic_zirconia --- moissanite
     GGG --- cubic_zirconia
     GGG --- diamond
@@ -188,6 +193,95 @@ graph LR
     ivory --- pearl_natural_saltwater
     pearl_akoya --- pearl_freshwater
     coral --- ivory
+    orthoclase --- rock_crystal
+    labradorite --- orthoclase
+    amazonite --- orthoclase
+    amazonite --- labradorite
+    labradorite --- sunstone
+    amazonite --- turquoise
+    aventurine_quartz --- sunstone
+    emerald --- tsavorite
+    emerald --- hiddenite
+    emerald --- peridot
+    aquamarine --- emerald
+    kunzite --- morganite
+    morganite --- rose_quartz
+    morganite --- rubellite
+    citrine_natural --- heliodor
+    chrysoberyl_yellow --- heliodor
+    goshenite --- heliodor
+    goshenite --- rock_crystal
+    goshenite --- white_topaz
+    goshenite --- white_sapphire
+    kunzite --- rose_quartz
+    kunzite --- rubellite
+    hiddenite --- tsavorite
+    hiddenite --- peridot
+    rock_crystal --- rose_quartz
+    amethyst --- rose_quartz
+    peridot --- prasiolite
+    prasiolite --- rock_crystal
+    amethyst --- prasiolite
+    azurite --- malachite
+    malachite --- turquoise
+    chrysocolla --- malachite
+    azurite --- lapis_lazuli
+    azurite --- turquoise
+    chrysocolla --- turquoise
+    lapis_lazuli --- turquoise
+    amazonite --- chrysocolla
+    lapis_lazuli --- sodalite
+    amazonite --- sodalite
+    peridot --- tsavorite
+    rhodochrosite --- rhodonite
+    rhodonite --- rubellite
+    fluorite --- rock_crystal
+    cubic_zirconia --- fluorite
+    amethyst --- fluorite
+    andradite --- sphalerite
+    cubic_zirconia --- sphalerite
+    glass_paste --- opal_precious
+    obsidian --- opal_precious
+    fire_opal --- opal_precious
+    fire_opal --- glass_paste
+    amethyst --- ametrine
+    ametrine --- citrine_natural
+    ametrine --- rock_crystal
+    milky_quartz --- rock_crystal
+    milky_quartz --- rose_quartz
+    milky_quartz --- opal_precious
+    tsavorite --- uvarovite
+    demantoid --- uvarovite
+    grossular --- uvarovite
+    grossular --- mali_garnet
+    andradite --- mali_garnet
+    hessonite --- mali_garnet
+    grossular --- hessonite
+    hessonite --- spessartine
+    andradite --- hessonite
+    andradite --- demantoid
+    demantoid --- tsavorite
+    demantoid --- peridot
+    danburite --- goshenite
+    danburite --- white_topaz
+    apatite --- danburite
+    kornerupine --- peridot
+    kornerupine --- tsavorite
+    danburite --- kornerupine
+    demantoid --- sphene
+    sphalerite --- sphene
+    sphene --- zircon_high
+    apatite --- ivory
+    apatite --- blue_zircon
+    blue_zircon --- zircon_high
+    zircon_high --- zircon_low
+    blue_zircon --- zircon_low
+    charoite --- sugilite
+    rhodonite --- sugilite
+    charoite --- lapis_lazuli
+    jadeite --- jadeite_polymer
+    jadeite_polymer --- nephrite
+    jadeite_polymer --- serpentine
 ```
 
 The graph clusters by gem family — the catalog's confusables encode the *natural* groupings a working gemmologist would expect.

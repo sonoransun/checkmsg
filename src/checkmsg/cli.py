@@ -6,6 +6,7 @@ from pathlib import Path
 
 from checkmsg import diagnose as diagnose_mod
 from checkmsg import epr as epr_mod
+from checkmsg import glossary as glossary_mod
 from checkmsg import io as io_mod
 from checkmsg import laicpms as laicpms_mod
 from checkmsg import squid as squid_mod
@@ -19,6 +20,7 @@ from checkmsg.xrf import identify_elements as xrf_identify
 UNITS = {
     "raman": "cm-1", "xrf": "keV", "libs": "nm", "uvvis": "nm",
     "epr": "mT", "laicpms": "m/z", "squid-mh": "mT", "squid-chi": "K",
+    "pl": "nm", "ftir": "cm-1", "mossbauer": "mm/s", "cl": "nm",
 }
 
 
@@ -29,7 +31,8 @@ def main(argv: list[str] | None = None) -> int:
     pa = sub.add_parser("analyze", help="Run a single technique on one spectrum file.")
     pa.add_argument(
         "technique",
-        choices=["raman", "xrf", "libs", "uvvis", "epr", "laicpms", "squid-mh", "squid-chi"],
+        choices=["raman", "xrf", "libs", "uvvis", "epr", "laicpms", "squid-mh", "squid-chi",
+                 "pl", "ftir", "mossbauer", "cl"],
     )
     pa.add_argument("path", type=Path)
     pa.add_argument("--frequency", type=float, default=None,
@@ -48,6 +51,24 @@ def main(argv: list[str] | None = None) -> int:
     pd = sub.add_parser("diagnose", help="Run unified diagnostic pipeline on a set of spectra.")
     pd.add_argument("files", nargs="+", type=str,
                     help="Same format as 'identify': 'raman:path.csv', 'epr:path.csv:9.5', etc.")
+    pd.add_argument("--tier", choices=["novice", "practitioner", "expert"], default="expert",
+                    help="Report sophistication: novice (plain), practitioner (explained), "
+                         "expert (full trace + caveats; default).")
+    pd.add_argument("--calibrated", nargs="?", const="platt", default=None, choices=["platt", "gnb"],
+                    help="Attach a calibrated P(correct) from the bundled Platt or GNB calibrator.")
+
+    psim = sub.add_parser("similar", help="Find the nearest catalog spectra to a measurement.")
+    psim.add_argument("entry", help="'<technique>:<path>', e.g. raman:spectrum.csv")
+    psim.add_argument("--k", type=int, default=5, help="Number of nearest matches to show.")
+
+    pg = sub.add_parser("glossary", help="Look up the plain-language meaning of a shorthand term.")
+    pg.add_argument("term", nargs="?", default=None,
+                    help="Term to define (e.g. EPR, Cr3+, ferrimagnetic). Omit to list all.")
+
+    ps = sub.add_parser("serve", help="Launch the HTTP API (requires the 'service' extra).")
+    ps.add_argument("--host", default="127.0.0.1")
+    ps.add_argument("--port", type=int, default=8000)
+    ps.add_argument("--reload", action="store_true", help="Auto-reload on code changes (dev).")
 
     args = p.parse_args(argv)
 
@@ -109,6 +130,21 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  - {note}")
             for c in sorted(r.concentrations.values(), key=lambda c: c.ppm, reverse=True)[:10]:
                 print(f"  {c.element:<3} {c.ppm:>10.3f} ppm  (LOD {c.detection_limit_ppm:.3f})")
+        elif args.technique == "pl":
+            from checkmsg import pl as pl_mod
+            r = pl_mod.analyze(spec)
+            print(r.headline())
+            for p, b in r.assignments:
+                print(f"  {b.name:<24} at {p:.1f} nm")
+        elif args.technique == "ftir":
+            from checkmsg import ftir as ftir_mod
+            print(ftir_mod.analyze(spec).headline())
+        elif args.technique == "cl":
+            from checkmsg import cl as cl_mod
+            print(cl_mod.analyze(spec).headline())
+        elif args.technique == "mossbauer":
+            from checkmsg import mossbauer as moss_mod
+            print(moss_mod.analyze(spec).headline())
         return 0
 
     if args.cmd == "diagnose":
@@ -135,8 +171,51 @@ def main(argv: list[str] | None = None) -> int:
             s = io_mod.read_csv(fname, technique=tech_t, units=UNITS[tech])
             s.metadata.update(extra)
             spectra.append(s)
-        report = diagnose_mod.diagnose(spectra)
-        print(report.render())
+        report = diagnose_mod.diagnose(spectra, calibrated=args.calibrated or False)
+        print(report.render(args.tier))
+        return 0
+
+    if args.cmd == "similar":
+        from checkmsg import similarity
+        parts = args.entry.split(":")
+        if len(parts) < 2:
+            print(f"error: '{args.entry}' must be '<technique>:<path>'", file=sys.stderr)
+            return 2
+        tech, fname = parts[0], parts[1]
+        s = io_mod.read_csv(fname, technique=tech, units=UNITS.get(tech, ""))  # type: ignore[arg-type]
+        hits = similarity.nearest(s, k=args.k)
+        if not hits:
+            print(f"no catalog references for technique {tech!r}")
+            return 0
+        print(f"Nearest {tech} catalog matches:")
+        for hit in hits:
+            print(f"  {hit.name:<24} similarity={hit.score:.3f}")
+        return 0
+
+    if args.cmd == "glossary":
+        if args.term is None:
+            for t in glossary_mod.all_terms():
+                print(f"{t.canonical}: {t.description}")
+            return 0
+        gt = glossary_mod.define(args.term)
+        if gt is None:
+            print(f"error: unknown term {args.term!r}", file=sys.stderr)
+            return 1
+        print(gt.inline())
+        print(f"  {gt.description}")
+        if gt.citation:
+            print(f"  source: {gt.citation}")
+        return 0
+
+    if args.cmd == "serve":
+        try:
+            import uvicorn
+        except ImportError:
+            print("error: the API server needs the 'service' extra: "
+                  "pip install -e '.[service]'", file=sys.stderr)
+            return 2
+        uvicorn.run("checkmsg.service.app:app", host=args.host, port=args.port,
+                    reload=args.reload)
         return 0
 
     if args.cmd == "identify":

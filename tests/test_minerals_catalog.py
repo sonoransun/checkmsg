@@ -4,7 +4,7 @@ from checkmsg import minerals
 
 
 def test_catalog_size():
-    assert len(minerals.CATALOG) >= 40, "catalog must have ≥40 entries"
+    assert len(minerals.CATALOG) >= 94, "catalog must have ≥94 entries"
 
 
 def test_get_canonical_name():

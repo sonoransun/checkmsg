@@ -5,9 +5,13 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
+from checkmsg import cl as cl_mod
 from checkmsg import epr as epr_mod
+from checkmsg import ftir as ftir_mod
 from checkmsg import laicpms as laicpms_mod
 from checkmsg import libs as libs_mod
+from checkmsg import mossbauer as mossbauer_mod
+from checkmsg import pl as pl_mod
 from checkmsg import raman as raman_mod
 from checkmsg import uvvis as uvvis_mod
 from checkmsg import xrf as xrf_mod
@@ -22,6 +26,10 @@ class IdentificationResult:
     uvvis: uvvis_mod.UvVisResult | None = None
     epr: epr_mod.EprResult | None = None
     laicpms: laicpms_mod.IcpmsResult | None = None
+    pl: pl_mod.PlResult | None = None
+    ftir: ftir_mod.FtirResult | None = None
+    mossbauer: mossbauer_mod.MossbauerResult | None = None
+    cl: cl_mod.ClResult | None = None
     notes: list[str] = field(default_factory=list)
 
     def headline(self) -> str:
@@ -43,6 +51,14 @@ class IdentificationResult:
             parts.append(f"EPR top center: {best.name} (cosine {best.cosine:.2f})")
         if self.laicpms:
             parts.append(f"LA-ICP-MS: {self.laicpms.headline()}")
+        if self.pl:
+            parts.append(self.pl.headline())
+        if self.ftir:
+            parts.append(self.ftir.headline())
+        if self.mossbauer:
+            parts.append(self.mossbauer.headline())
+        if self.cl:
+            parts.append(self.cl.headline())
         return "; ".join(parts) if parts else "no signal"
 
     def report(self) -> str:
@@ -89,6 +105,14 @@ class IdentificationResult:
                     val = self.laicpms.ree_pattern.get(el)
                     if val is not None:
                         lines.append(f"    {el}: {val:.2f}")
+        if self.pl:
+            lines.append("\nPL defect centres: " + self.pl.headline())
+        if self.ftir:
+            lines.append("\nFTIR: " + self.ftir.headline())
+        if self.mossbauer:
+            lines.append("\nMössbauer: " + self.mossbauer.headline())
+        if self.cl:
+            lines.append("\nCL: " + self.cl.headline())
         if self.notes:
             lines.append("\nNotes:")
             lines.extend(f"  - {n}" for n in self.notes)
@@ -126,6 +150,18 @@ def combined_report(spectra: Iterable[Spectrum]) -> IdentificationResult:
             # Combined report only handles bulk integrated spectra here. Time-resolved
             # transient runs are accessed directly via laicpms.analyze().
             result.notes.append("LA-ICP-MS bulk spectrum — call laicpms.analyze on the IcpmsRun for full results.")
+        elif s.technique == "pl":
+            result.pl = pl_mod.analyze(s)
+            if result.pl.has_synthetic_marker():
+                result.notes.append("PL: Si-V centre present — CVD-synthetic-diamond marker.")
+        elif s.technique == "ftir":
+            result.ftir = ftir_mod.analyze(s)
+            if result.ftir.has_polymer():
+                result.notes.append("FTIR: C-H polymer band — resin impregnation (treatment).")
+        elif s.technique == "mossbauer":
+            result.mossbauer = mossbauer_mod.analyze(s)
+        elif s.technique == "cl":
+            result.cl = cl_mod.analyze(s)
     return result
 
 
